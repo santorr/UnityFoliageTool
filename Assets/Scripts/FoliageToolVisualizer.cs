@@ -51,8 +51,8 @@ public class FoliageToolVisualizer : MonoBehaviour
                 _argsBuffers[i],                                    // Buffer with args
                 0,                                                  // Args offset
                 null,                                               // Property block
-                DataContainer.FoliageData[i].RenderShadows,
-                DataContainer.FoliageData[i].ReceiveShadows
+                DataContainer.FoliageData[i].RenderShadows,         // Cast shadows
+                DataContainer.FoliageData[i].ReceiveShadows         // Receive shadows
                 );
             }
         }

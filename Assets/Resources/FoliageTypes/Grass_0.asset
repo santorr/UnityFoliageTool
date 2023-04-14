@@ -23,6 +23,6 @@ MonoBehaviour:
   RandomRotation: 1
   Offset: 0
   MinimumScale: 0.5
-  MaximumScale: 1
+  MaximumScale: 1.5
   SplatterDistance: 0.3
   RandomizeDistance: 0.25

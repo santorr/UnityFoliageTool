@@ -12,8 +12,8 @@ Shader "Foliage/Grass_shader"
 		SubShader{
         Tags
         {
-            "Queue" = "Transparent"
-            "RenderType" = "TransparentCutout"
+            "Queue" = "Geometry"
+            "RenderType" = "Opaque"
         }
 
 		Blend Off
@@ -94,6 +94,7 @@ Shader "Foliage/Grass_shader"
 		float4 rmoMap = tex2D(_RMO, IN.uv_RMO);
 		clip(albedoMap.a - _Cutoff);
 		o.Albedo = albedoMap.rgb;
+		o.Emission = float4(0, 0, 0, 1);
 		o.Normal = FlattenNormal(normalMap, _NormalIntensity);
 		o.Specular = _SpecularIntensity;
 		o.Smoothness = 1 - clamp(mul(rmoMap.r, _RoughnessIntensity),0 , 1);
