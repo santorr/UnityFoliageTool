@@ -7,7 +7,6 @@ Shader "Foliage/Grass_shader"
 		[NoScaleOffset] _RMO("Roughness / Metallic / Occlusion", 2D) = "white" {}
 		_RoughnessIntensity("Roughness intensity", Range(0, 1)) = 0.75
 		_SpecularIntensity("Specular intensity", Range(0, 1)) = 0.5
-		_Cutoff("Alpha cutoff", Range(0,1)) = 0.5
 		_CullingDistance("Culling distance", Range(0, 100)) = 15
 		_CullingAngle("Culling angle", Range(0, 180)) = 90
 	}
@@ -35,7 +34,6 @@ Shader "Foliage/Grass_shader"
 		sampler2D _RMO;
 		float _RoughnessIntensity;
 		float _SpecularIntensity;
-		fixed _Cutoff;
 		fixed _CullingDistance;
 		fixed _CullingAngle;
 
@@ -142,7 +140,9 @@ Shader "Foliage/Grass_shader"
 		o.Smoothness = 1 - clamp(mul(rmoMap.r, _RoughnessIntensity),0 , 1);
 
 		// Dithering
-		clip(albedoMap.a - DitherAlphaValue(IN.screenPos.xy));
+		// clip(albedoMap.a - DitherAlphaValue(IN.screenPos.xy));
+		clip(albedoMap.a - 0.5);
+		o.Alpha = albedoMap.a;
 	}
 	ENDCG
 	}
