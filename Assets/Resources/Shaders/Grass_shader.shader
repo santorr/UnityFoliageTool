@@ -8,6 +8,8 @@ Shader "Foliage/Grass_shader"
 		_RoughnessIntensity("Roughness intensity", Range(0, 1)) = 0.75
 		_SpecularIntensity("Specular intensity", Range(0, 1)) = 0.5
 		_Cutoff("Alpha cutoff", Range(0,1)) = 0.5
+		_CullingDistance("Culling distance", Range(0, 100)) = 15
+		_CullingAngle("Culling angle", Range(0, 180)) = 90
 	}
 		SubShader{
         Tags
@@ -35,6 +37,8 @@ Shader "Foliage/Grass_shader"
 		float _RoughnessIntensity;
 		float _SpecularIntensity;
 		fixed _Cutoff;
+		fixed _CullingDistance;
+		fixed _CullingAngle;
 
 		struct Input {
 			float2 uv_MainTex : TEXCOORD0;
@@ -51,29 +55,52 @@ Shader "Foliage/Grass_shader"
 			StructuredBuffer<GrassData> grassData;
 		#endif
 
+	// Function to flatten normal
+	float3 FlattenNormal(float3 normal, float intensity)
+	{
+		return lerp(normal, float3(0, 0, 1), intensity);
+	}
+
+	// Function is visible
+	int IsVisible(float4 position)
+	{
+		// Hide with distance
+		if(distance(_WorldSpaceCameraPos, position) > _CullingDistance)
+		{
+			return 0;
+		}
+		// Hide with angle
+		float3 camDir = normalize(_WorldSpaceCameraPos - position);
+		float3 viewDir = mul((float3x3)UNITY_MATRIX_V,float3(0,0,1));
+
+		float angle = acos(dot(camDir, viewDir));
+
+		if (angle > radians(_CullingAngle)) 
+		{
+			return 0;
+		}
+		return 1;
+	}
+
 	void setup()
 	{
 		#ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
 
 		float4 position = float4(grassData[unity_InstanceID].position, 1); // Position
+
 		float scale = grassData[unity_InstanceID].scale; // Scale
+
+
+		if(_CullingDistance > 0)
+		{
+			// On calcul la distance
+			scale = mul(scale, IsVisible(position));
+		}
 
 		unity_ObjectToWorld._11_21_31_41 = float4(scale, 0, 0, 0);
 		unity_ObjectToWorld._12_22_32_42 = float4(0, scale, 0, 0);
 		unity_ObjectToWorld._13_23_33_43 = float4(0, 0, scale, 0);
 		unity_ObjectToWorld._14_24_34_44 = float4(position.xyz, 1);
-
-		// https://forum.unity.com/threads/trying-to-rotate-instances-with-drawmeshinstancedindirect-shader-but-the-normals-get-messed-up.707600/
-		float rotation = 0;
-        float s, c;
-        sincos(rotation, s, c);
-        float4x4 rotateX = float4x4(
-            1, 0, 0, 0,
-            0, c, -s, 0,
-            0, s, c, 0,
-            0, 0, 0, 1
-            );
-        unity_ObjectToWorld = mul(unity_ObjectToWorld, rotateX);
 
 		unity_WorldToObject = unity_ObjectToWorld;
 		unity_WorldToObject._14_24_34 *= -1;
@@ -82,11 +109,7 @@ Shader "Foliage/Grass_shader"
 		#endif
 	}
 
-	float3 FlattenNormal(float3 normal, float intensity)
-	{
-		return lerp(normal, float3(0, 0, 1), intensity);
-	}
-
+	// Surface
 	void surf(Input IN, inout SurfaceOutputStandardSpecular o) 
 	{
 		float4 albedoMap = tex2D(_MainTex, IN.uv_MainTex);
