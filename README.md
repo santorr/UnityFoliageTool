@@ -17,6 +17,7 @@ Features missing :
 - Instance rotation
 - Shader : highlight
 - Support multiple instance foliage
+- More optimization
 
 ![alt text](/Assets/Screenshots/Screen.jpg)
 
