@@ -140,9 +140,9 @@ Shader "Foliage/Grass_shader"
 		o.Smoothness = 1 - clamp(mul(rmoMap.r, _RoughnessIntensity),0 , 1);
 
 		// Dithering
-		// clip(albedoMap.a - DitherAlphaValue(IN.screenPos.xy));
-		clip(albedoMap.a - 0.5);
-		o.Alpha = albedoMap.a;
+		clip(albedoMap.a - DitherAlphaValue(IN.screenPos.xy));
+		// clip(albedoMap.a - 0.5);
+		// o.Alpha = albedoMap.a;
 	}
 	ENDCG
 	}
