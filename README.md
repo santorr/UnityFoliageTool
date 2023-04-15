@@ -7,6 +7,8 @@ Work in progress tool based on GPU instancing to create a foliage placement tool
 - Dither alpha
 - Instance position
 - Instance scale
+- Options : cast shadows, receive shadows
+- Shader : base color, normal, RMO (roughness, metallic, ambient occlusion), specular
 
 ![alt text](/Assets/Screenshots/Screen.jpg)
 
