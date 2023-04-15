@@ -1,6 +1,6 @@
 # UnityFoliageTool
 
-Work in progress tool based on GPU instancing to create a foliage placement tool like Unreal engine.
+Work in progress tool based on GPU instancing to create a foliage placement tool like Unreal engine foliage editor.
 
 ![alt text](/Assets/Screenshots/Screen.jpg)
 
