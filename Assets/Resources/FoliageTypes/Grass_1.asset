@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8c7f8f9877474441ab51d263337ed4f, type: 3}
+  m_Name: Grass_1
+  m_EditorClassIdentifier: 
+  Mesh: {fileID: 7621328528774816833, guid: ea60c243f9a21394498c983965d08242, type: 3}
+  Material: {fileID: 2100000, guid: 79d3da2c8e6903e4098550c1a561a6df, type: 2}
+  LayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  RenderShadows: 0
+  ReceiveShadows: 1
+  AlignToNormal: 1
+  RandomRotation: 1
+  Offset: 0
+  MinimumScale: 0.75
+  MaximumScale: 1
+  SplatterDistance: 0.3
+  RandomizeDistance: 1

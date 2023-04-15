@@ -698,6 +698,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 3318806486964101127, guid: 9450dd5d6667d6d418caa60ec7162d28, type: 3}
+      propertyPath: _foliageTypes.Array.data[0]
+      value: 
+      objectReference: {fileID: 11400000, guid: b085cb54c1917424f921ac82275148c1, type: 2}
     - target: {fileID: 5565819159860180501, guid: 9450dd5d6667d6d418caa60ec7162d28, type: 3}
       propertyPath: m_RootOrder
       value: 3

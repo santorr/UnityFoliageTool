@@ -17,7 +17,7 @@ MonoBehaviour:
   LayerMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  RenderShadows: 1
+  RenderShadows: 0
   ReceiveShadows: 1
   AlignToNormal: 1
   RandomRotation: 1
