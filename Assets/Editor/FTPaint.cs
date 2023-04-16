@@ -3,6 +3,7 @@ using UnityEditor;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
 using System.Linq;
+using UnityEditor.Presets;
 
 public class FTPaint : EditorWindow
 {
@@ -43,7 +44,7 @@ public class FTPaint : EditorWindow
         Erase
     }
 
-    Brush _brush = new Brush();
+    FTBrush _brush = new FTBrush();
     FTFoliageManager _foliageManager;
     EPaintMode _paintMode;
     int _selectedIndex;
@@ -382,10 +383,10 @@ public class FTPaint : EditorWindow
         switch (_paintMode)
         {
             case EPaintMode.Paint:
-                _brush.Preset = new BrushPreset(innerColor: new Color(0.27f, 0.38f, 0.49f, 0.25f), outerColor: new Color(0.27f, 0.38f, 0.49f, 1));
+                _brush.Preset = _brush.PaintPreset;
                 break;
             case EPaintMode.Erase:
-                _brush.Preset = new BrushPreset(innerColor: new Color(1f, 0f, 0f, 0.25f), outerColor: new Color(1f, 0f, 0f, 1));
+                _brush.Preset = _brush.ErasePreset;
                 break;
             default: break;
         }
@@ -407,7 +408,7 @@ public class FTPaint : EditorWindow
     }
 }
 
-public class Brush
+public class FTBrush
 {
     public Vector3 Position;
     public Vector3 Normal;
@@ -416,17 +417,28 @@ public class Brush
     public float Density = 1f;
     public bool Display = false;
 
-    public BrushPreset Preset = new BrushPreset(innerColor: Color.white, outerColor: Color.white);
-}
+    public FTBrushPreset Preset;
 
-public class BrushPreset
-{
-    public Color InnerColor;
-    public Color OuterColor;
+    public readonly FTBrushPreset PaintPreset;
+    public readonly FTBrushPreset ErasePreset; 
 
-    public BrushPreset(Color innerColor, Color outerColor)
+    // Constructor
+    public FTBrush()
     {
-        InnerColor = innerColor;
-        OuterColor = outerColor;
+        PaintPreset = new FTBrushPreset(innerColor: new Color(0.27f, 0.38f, 0.49f, 0.25f), outerColor: new Color(0.27f, 0.38f, 0.49f, 1));
+        ErasePreset = new FTBrushPreset(innerColor: new Color(1f, 0f, 0f, 0.25f), outerColor: new Color(1f, 0f, 0f, 1));
+        Preset = PaintPreset;
+    }
+
+    public class FTBrushPreset
+    {
+        public readonly Color InnerColor;
+        public readonly Color OuterColor;
+
+        public FTBrushPreset(Color innerColor, Color outerColor)
+        {
+            InnerColor = innerColor;
+            OuterColor = outerColor;
+        }
     }
 }
