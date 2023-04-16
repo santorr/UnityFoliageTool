@@ -3,7 +3,6 @@ using UnityEditor;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
 using System.Linq;
-using UnityEditor.Presets;
 
 public class FTPaint : EditorWindow
 {
@@ -45,7 +44,7 @@ public class FTPaint : EditorWindow
     }
 
     FTBrush _brush = new FTBrush();
-    FTFoliageManager _foliageManager;
+    FTSceneManager _sceneManager;
     EPaintMode _paintMode;
     int _selectedIndex;
     List<FoliageType> _foliageTypes = new List<FoliageType>();
@@ -301,7 +300,7 @@ public class FTPaint : EditorWindow
         }
         #endregion
 
-        FoliageData foliageData = FoliageManager.DataContainer.GetFoliageDataFromId(currentFoliageType.GetID);
+        FoliageData foliageData = SceneManager.SceneData.GetFoliageDataFromId(currentFoliageType.GetID);
 
         if (foliageData == null)
         {
@@ -313,7 +312,7 @@ public class FTPaint : EditorWindow
                 renderShadows: currentFoliageType.RenderShadows,
                 receiveShadows: currentFoliageType.ReceiveShadows
                 );
-            FoliageManager.DataContainer.FoliageData.Add(newFoliageData);
+            SceneManager.SceneData.FoliageData.Add(newFoliageData);
             foliageData = newFoliageData;
         }
 
@@ -321,22 +320,22 @@ public class FTPaint : EditorWindow
         foliageData.Matrice.Add(matrice);
 
         // Update visualisation
-        FoliageManager.UpdateFoliage();
+        SceneManager.UpdateFoliage();
 
-        EditorUtility.SetDirty(FoliageManager.DataContainer);
+        EditorUtility.SetDirty(SceneManager.SceneData);
     }
 
     private void Erase()
     {
-        FoliageData foliageToRemove = FoliageManager.DataContainer.GetFoliageDataFromId(_foliageTypes[_selectedIndex].GetID);
+        FoliageData foliageToRemove = SceneManager.SceneData.GetFoliageDataFromId(_foliageTypes[_selectedIndex].GetID);
 
         for (int i = 0; i < foliageToRemove.Matrice.Count; i++)
         {
             if (Vector3.Distance(_brush.Position, foliageToRemove.Position(i)) < _brush.Size)
             {
                 foliageToRemove.Matrice.RemoveAt(i);
-                FoliageManager.UpdateFoliage();
-                EditorUtility.SetDirty(FoliageManager.DataContainer);
+                SceneManager.UpdateFoliage();
+                EditorUtility.SetDirty(SceneManager.SceneData);
             }
         }
 
@@ -392,19 +391,35 @@ public class FTPaint : EditorWindow
         }
     }
 
-    private FTFoliageManager FoliageManager
+    // Get the foliage scene manager, if doesn't exist create a new one in the current scene
+    private FTSceneManager SceneManager
     {
         get
         {
-            _foliageManager = (FTFoliageManager)FindObjectOfType(typeof(FTFoliageManager));
-            if (_foliageManager == null)
+            if (_sceneManager != null)
             {
-                GameObject foliageManager = new GameObject("FT_FoliageManager");
-                FTFoliageManager test = foliageManager.AddComponent<FTFoliageManager>();
-                _foliageManager = test;
+                return _sceneManager;
             }
-            return _foliageManager;
+
+            _sceneManager = (FTSceneManager)FindObjectOfType(typeof(FTSceneManager));
+
+            if (_sceneManager != null)
+            {
+                return _sceneManager;
+            }
+            else
+            {
+                _sceneManager = CreateSceneManager();
+            }
+            return _sceneManager;
         }
+    }
+
+    // Create a new scene manager and return it
+    private FTSceneManager CreateSceneManager()
+    {
+        GameObject FTManagerObject = new GameObject("FT_Manager");
+        return FTManagerObject.AddComponent<FTSceneManager>();
     }
 }
 

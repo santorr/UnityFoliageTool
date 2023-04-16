@@ -5,7 +5,7 @@ using UnityEngine;
 public class FoliageToolVisualizer : MonoBehaviour
 {
     // Contains all foliage to render
-    public FoliageDataContainer DataContainer;
+    public FTSceneData SceneData;
 
     private ComputeBuffer[] _argsBuffers;
     private ComputeBuffer[] _foliageBuffers;
@@ -21,38 +21,38 @@ public class FoliageToolVisualizer : MonoBehaviour
     private void Start()
     {
         // Initialize buffer arrays with the right number of desired foliage
-        _argsBuffers = new ComputeBuffer[DataContainer.FoliageData.Count];
-        _foliageBuffers = new ComputeBuffer[DataContainer.FoliageData.Count];
+        _argsBuffers = new ComputeBuffer[SceneData.FoliageData.Count];
+        _foliageBuffers = new ComputeBuffer[SceneData.FoliageData.Count];
 
         // Loop over all foliage to create buffers
-        for (int i=0; i<DataContainer.FoliageData.Count; i++)
+        for (int i=0; i<SceneData.FoliageData.Count; i++)
         {
-            _foliageBuffers[i] = new ComputeBuffer(DataContainer.FoliageData[i].Matrice.Count, sizeof(float) * 4);
+            _foliageBuffers[i] = new ComputeBuffer(SceneData.FoliageData[i].Matrice.Count, sizeof(float) * 4);
             _argsBuffers[i] = new ComputeBuffer(1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments);
 
             _buffersToRelease.Add(_foliageBuffers[i]);
             _buffersToRelease.Add(_argsBuffers[i]);
 
-            CreateBuffers(foliageBuffer: _foliageBuffers[i], argsBuffer: _argsBuffers[i], foliageData: DataContainer.FoliageData[i]);
+            CreateBuffers(foliageBuffer: _foliageBuffers[i], argsBuffer: _argsBuffers[i], foliageData: SceneData.FoliageData[i]);
         }  
     }
 
     private void Update()
     {
-        for (int i=0; i< DataContainer.FoliageData.Count; i++)
+        for (int i=0; i< SceneData.FoliageData.Count; i++)
         {
-            if (DataContainer.FoliageData[i] != null && _argsBuffers[i] != null)
+            if (SceneData.FoliageData[i] != null && _argsBuffers[i] != null)
             {
                 Graphics.DrawMeshInstancedIndirect(
-                DataContainer.FoliageData[i].Mesh,                  // Mesh
+                SceneData.FoliageData[i].Mesh,                  // Mesh
                 0,                                                  // Submesh index
-                DataContainer.FoliageData[i].Material,              // Material
+                SceneData.FoliageData[i].Material,              // Material
                 new Bounds(Vector3.zero, Vector3.one * 1000f),      // World bounds
                 _argsBuffers[i],                                    // Buffer with args
                 0,                                                  // Args offset
                 null,                                               // Property block
-                DataContainer.FoliageData[i].RenderShadows,         // Cast shadows
-                DataContainer.FoliageData[i].ReceiveShadows         // Receive shadows
+                SceneData.FoliageData[i].RenderShadows,         // Cast shadows
+                SceneData.FoliageData[i].ReceiveShadows         // Receive shadows
                 );
             }
         }

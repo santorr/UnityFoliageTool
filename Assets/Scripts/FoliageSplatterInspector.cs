@@ -10,14 +10,8 @@ public class FoliageSplatterInspector : Editor
 
         FoliageSplatterTool foliageTool = (FoliageSplatterTool)target;
 
-        if (GUILayout.Button("Clear"))
-        {
-            foliageTool.ClearData();
-        }
-
         if (GUILayout.Button("Generate"))
         {
-            foliageTool.ClearData();
             foliageTool.GenerateData();
         }
     }

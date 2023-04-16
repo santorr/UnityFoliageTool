@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 5565819159860180501}
   - component: {fileID: 3318806486964101127}
-  - component: {fileID: 5875096784820337073}
   m_Layer: 0
   m_Name: FoliageSplatter
   m_TagString: Untagged
@@ -27,7 +26,7 @@ Transform:
   m_GameObject: {fileID: 9193981117010376403}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 50, y: 10, z: 50}
+  m_LocalScale: {x: 100, y: 1, z: 50}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -48,16 +47,3 @@ MonoBehaviour:
   _method: 0
   _foliageTypes:
   - {fileID: 11400000, guid: b085cb54c1917424f921ac82275148c1, type: 2}
---- !u!114 &5875096784820337073
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9193981117010376403}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 86061d6d27617a347a30db594c87273b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  DataContainer: {fileID: 11400000, guid: f8dc577d662708647aa2e8df2813a1bd, type: 2}
