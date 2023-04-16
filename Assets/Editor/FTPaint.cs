@@ -20,6 +20,7 @@ public class FTPaint : EditorWindow
             Label.normal.textColor = new Color(0.85f, 0.85f, 0.85f, 1f);
             Label.fontStyle = FontStyle.Bold;
             Label.padding = new RectOffset(5, 5, 0, 0);
+            Label.alignment = TextAnchor.MiddleLeft;
 
             // Title
             Title = new GUIStyle();
@@ -57,7 +58,28 @@ public class FTPaint : EditorWindow
         EditorWindow.GetWindow(typeof(FTPaint));
     }
 
-    // Draw window properties
+    // Select window tab || Click on tab || Open tab
+    private void OnFocus()
+    {
+        SceneView.duringSceneGui -= this.OnSceneGUI;
+        SceneView.duringSceneGui += this.OnSceneGUI;
+
+        RefreshFoliageTypes();
+    }
+
+    // Exit tab
+    private void OnDestroy()
+    {
+        SceneView.duringSceneGui -= this.OnSceneGUI;
+    }
+
+    // While tab is visible
+    private void Update()
+    {
+
+    }
+
+    // While cursor move on tab
     private void OnGUI()
     {
         EPaintMode newPaintMode = (EPaintMode)EditorGUILayout.EnumPopup("Mode", _paintMode, "Button", GUILayout.Height(30));
@@ -99,6 +121,49 @@ public class FTPaint : EditorWindow
         #endregion
 
         GUISelectedFoliageProperties();
+    }
+
+    // While tab is open
+    private void OnSceneGUI(SceneView sceneView)
+    {
+        DrawBrush();
+
+        if (_brush.Display)
+        {
+            HandleSceneViewInputs();
+        }
+    }
+
+    // Handle event in the scene
+    private void HandleSceneViewInputs()
+    {
+        Event current = Event.current;
+        int controlId = GUIUtility.GetControlID(GetHashCode(), FocusType.Passive);
+
+        if ((current.type == EventType.MouseDrag || current.type == EventType.MouseDown) && !current.alt)
+        {
+            if (current.button == 0)
+            {
+                switch (_paintMode)
+                {
+                    case EPaintMode.Paint:
+                        Paint();
+                        break;
+                    case EPaintMode.Erase:
+                        Erase();
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+
+        if (Event.current.type == EventType.Layout)
+        {
+            HandleUtility.AddDefaultControl(controlId);
+        }
+
+        SceneView.RepaintAll();
     }
 
     private void GUISelectedFoliageProperties()
@@ -191,47 +256,6 @@ public class FTPaint : EditorWindow
         GUILayout.EndScrollView();
     }
 
-    private void OnSceneGUI(SceneView sceneView)
-    {
-        DisplayBrushGizmos();
-        if (_brush.Display)
-        {
-            HandleSceneViewInputs();
-        }
-    }
-
-    private void HandleSceneViewInputs()
-    {
-        Event current = Event.current;
-        int controlId = GUIUtility.GetControlID(GetHashCode(), FocusType.Passive);
-
-        #region PAINT
-        if ((current.type == EventType.MouseDrag || current.type == EventType.MouseDown) && !current.alt)
-        {
-            if (current.button == 0)
-            {
-                switch (_paintMode)
-                {
-                    case EPaintMode.Paint:
-                        Paint();
-                        break;
-                    case EPaintMode.Erase:
-                        Erase();
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
-        #endregion
-
-        if (Event.current.type == EventType.Layout)
-        {
-            HandleUtility.AddDefaultControl(controlId);
-        }
-        SceneView.RepaintAll();
-    }
-
     private void Paint()
     {
         FoliageType currentFoliageType = _foliageTypes[_selectedIndex];
@@ -259,7 +283,7 @@ public class FTPaint : EditorWindow
         #endregion
 
         #region Calcul scale
-        Vector3 randomScale = RandomUniformScale(minimum: currentFoliageType.MinimumScale, maximum: currentFoliageType.MaximumScale);
+        Vector3 randomScale = FTUtils.RandomUniformVector3(minimum: currentFoliageType.MinimumScale, maximum: currentFoliageType.MaximumScale);
         #endregion
 
         #region Calcul rotation
@@ -301,22 +325,6 @@ public class FTPaint : EditorWindow
         EditorUtility.SetDirty(FoliageManager.DataContainer);
     }
 
-    // The foliage manager contain Foliage data container and is able to show foliage data
-    private FTFoliageManager FoliageManager
-    {
-        get
-        {
-            _foliageManager = (FTFoliageManager)FindObjectOfType(typeof(FTFoliageManager));
-            if (_foliageManager == null)
-            {
-                GameObject foliageManager = new GameObject("FT_FoliageManager");
-                FTFoliageManager test = foliageManager.AddComponent<FTFoliageManager>();
-                _foliageManager = test;
-            }
-            return _foliageManager;
-        }
-    }
-
     private void Erase()
     {
         FoliageData foliageToRemove = FoliageManager.DataContainer.GetFoliageDataFromId(_foliageTypes[_selectedIndex].GetID);
@@ -333,21 +341,7 @@ public class FTPaint : EditorWindow
 
     }
 
-    void OnFocus()
-    {
-        SceneView.duringSceneGui -= this.OnSceneGUI;
-        SceneView.duringSceneGui += this.OnSceneGUI;
-
-        RefreshFoliageTypes();
-        // HandlePaintMode(EPaintMode.Paint);
-    }
-
-    void OnDestroy()
-    {
-        SceneView.duringSceneGui -= this.OnSceneGUI;
-    }
-
-    private void DisplayBrushGizmos()
+    private void DrawBrush()
     {
         Ray ray = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
         RaycastHit hit;
@@ -381,20 +375,7 @@ public class FTPaint : EditorWindow
         }
     }
 
-    private Vector3 RandomUniformScale(float minimum, float maximum)
-    {
-        float randomValue = Random.Range(minimum, maximum);
-        return new Vector3(randomValue, randomValue, randomValue);
-    }
-
-    private Vector3 RandomNonUniformScale(float minimum, float maximum)
-    {
-        float randomX = Random.Range(minimum, maximum);
-        float randomY = Random.Range(minimum, maximum);
-        float randomZ = Random.Range(minimum, maximum);
-        return new Vector3(randomX, randomY, randomZ);
-    }
-
+    // On paint mode change
     private void HandlePaintMode(EPaintMode newPaintMode)
     {
         _paintMode = newPaintMode;
@@ -407,6 +388,21 @@ public class FTPaint : EditorWindow
                 _brush.Preset = new BrushPreset(innerColor: new Color(1f, 0f, 0f, 0.25f), outerColor: new Color(1f, 0f, 0f, 1));
                 break;
             default: break;
+        }
+    }
+
+    private FTFoliageManager FoliageManager
+    {
+        get
+        {
+            _foliageManager = (FTFoliageManager)FindObjectOfType(typeof(FTFoliageManager));
+            if (_foliageManager == null)
+            {
+                GameObject foliageManager = new GameObject("FT_FoliageManager");
+                FTFoliageManager test = foliageManager.AddComponent<FTFoliageManager>();
+                _foliageManager = test;
+            }
+            return _foliageManager;
         }
     }
 }
