@@ -17,7 +17,8 @@ Work in progress tool based on GPU instancing to create a foliage placement tool
 Features missing :
 - Paint control density
 - Instance rotation
-- Shader : highlight
+- Shader : highlight, wind
+- Wind system
 - More optimization / clean
 
 ![alt text](/Assets/Screenshots/Screen.jpg)
