@@ -4,65 +4,76 @@ using System.Collections.Generic;
 using UnityEngine.Rendering;
 using System.Linq;
 
-public enum EPaintMode
-{
-    Paint,
-    Erase
-}
-
 public class FTPaint : EditorWindow
 {
-    private FTFoliageManager _foliageManager;
+    // Style
+    static class FTStyles
+    {
+        public static readonly GUIStyle Label;
+        public static readonly GUIStyle Title;
 
-    private EPaintMode _paintMode;
+        static FTStyles()
+        {
+            // Simple label
+            Label = new GUIStyle();
+            Label.fontSize = 12;
+            Label.normal.textColor = new Color(0.85f, 0.85f, 0.85f, 1f);
+            Label.fontStyle = FontStyle.Bold;
+            Label.padding = new RectOffset(5, 5, 0, 0);
 
-    // Paint settings
-    private Brush _brush = new Brush();
-    private bool _validBrushPosition;
+            // Title
+            Title = new GUIStyle();
+            Title.normal = new GUIStyleState();
+            Title.normal.textColor = new Color(0.85f, 0.85f, 0.85f);
+            Title.fontStyle = FontStyle.Bold;
+            Title.fontSize = 14;
+            Title.padding = new RectOffset(5, 5, 5, 5);
+            Texture2D tex = new Texture2D(1, 1);
+            tex.SetPixel(0, 0, new Color(0.17f, 0.17f, 0.17f));
+            tex.Apply();
+            Title.normal.background = tex;
+        }
+    }
 
-    // List of foliage types
-    private int _selectedIndex;
-    private List<FoliageType> _foliageTypes = new List<FoliageType>();
+    // Paint enum
+    enum EPaintMode
+    {
+        Paint,
+        Erase
+    }
 
-    // Scrolls
-    private Vector2 _foliageTypesSectionScrollPosition;
-    private Vector2 _parametersSectionScrollPosition;
+    Brush _brush = new Brush();
+    FTFoliageManager _foliageManager;
+    EPaintMode _paintMode;
+    int _selectedIndex;
+    List<FoliageType> _foliageTypes = new List<FoliageType>();
+    Vector2 _foliageTypesSectionScrollPosition;
+    Vector2 _parametersSectionScrollPosition;
 
+    // Create the window
     [MenuItem("Tools/FT Paint")]
     private static void ShowWindow()
     {
         EditorWindow.GetWindow(typeof(FTPaint));
     }
 
+    // Draw window properties
     private void OnGUI()
     {
-        #region Setup style
-        GUIStyle titleStyle = new GUIStyle();
-        titleStyle.normal = new GUIStyleState();
-        titleStyle.normal.textColor = new Color(0.86f, 0.86f, 0.86f);
-        titleStyle.fontStyle = FontStyle.Bold;
-        titleStyle.fontSize = 14;
-        titleStyle.padding = new RectOffset(5, 5, 5, 5);
-        Texture2D tex = new Texture2D(1, 1);
-        tex.SetPixel(0, 0, new Color(0.17f, 0.17f, 0.17f));
-        tex.Apply();
-        titleStyle.normal.background = tex;
-        #endregion
-
-        EPaintMode newPaintMode = (EPaintMode)EditorGUILayout.EnumPopup("Mode", _paintMode, "Button");
+        EPaintMode newPaintMode = (EPaintMode)EditorGUILayout.EnumPopup("Mode", _paintMode, "Button", GUILayout.Height(30));
         if (newPaintMode != _paintMode) { HandlePaintMode(newPaintMode); }
 
         #region BRUSH
-        GUILayout.Label("Brush", titleStyle);
+        GUILayout.Label("Brush", FTStyles.Title);
         GUILayout.Space(5);
         GUILayout.BeginHorizontal();
-        GUILayout.Label("Brush size", EditorStyles.boldLabel, GUILayout.Width(150));
+        GUILayout.Label("Brush size", FTStyles.Label, GUILayout.Width(150));
         _brush.Size = (float)GUILayout.HorizontalSlider(_brush.Size, 0.5f, 20f);
         GUILayout.Label(_brush.Size.ToString("F1"), GUILayout.Width(50));
         GUILayout.EndHorizontal();
         GUILayout.Space(5);
         GUILayout.BeginHorizontal();
-        GUILayout.Label("Brush density", EditorStyles.boldLabel, GUILayout.Width(150));
+        GUILayout.Label("Brush density", FTStyles.Label, GUILayout.Width(150));
         _brush.Density = (float)GUILayout.HorizontalSlider(_brush.Density, 0f, 1f);
         GUILayout.Label(_brush.Density.ToString("F2"), GUILayout.Width(50));
         GUILayout.EndHorizontal();
@@ -71,7 +82,7 @@ public class FTPaint : EditorWindow
 
         #region FOLIAGE TYPES
         int numberColumn = 2;
-        GUILayout.Label("Foliage types", titleStyle);
+        GUILayout.Label("Foliage types", FTStyles.Title);
         GUILayout.Space(5);
         _foliageTypesSectionScrollPosition = GUILayout.BeginScrollView(_foliageTypesSectionScrollPosition, GUILayout.Height(200));
 
@@ -87,34 +98,45 @@ public class FTPaint : EditorWindow
         GUILayout.EndScrollView();
         #endregion
 
-        #region INSTANCE SETTINGS
+        GUISelectedFoliageProperties();
+    }
+
+    private void GUISelectedFoliageProperties()
+    {
+        // If no foliage type selected, don't draw properties
+        if (_foliageTypes[_selectedIndex] == null)
+        {
+            return;
+        }
+
         _parametersSectionScrollPosition = GUILayout.BeginScrollView(_parametersSectionScrollPosition);
+
         #region Mesh area
-        GUILayout.Label("Mesh", titleStyle);
+        GUILayout.Label("Mesh", FTStyles.Title);
         GUILayout.Space(5);
         GUILayout.BeginHorizontal();
-        GUILayout.Label("Mesh", EditorStyles.boldLabel, GUILayout.Width(150));
+        GUILayout.Label("Mesh", FTStyles.Label, GUILayout.Width(150));
         _foliageTypes[_selectedIndex].Mesh = (Mesh)EditorGUILayout.ObjectField(_foliageTypes[_selectedIndex].Mesh, typeof(Mesh), false);
         GUILayout.EndHorizontal();
         GUILayout.Space(5);
         GUILayout.BeginHorizontal();
-        GUILayout.Label("Material", EditorStyles.boldLabel, GUILayout.Width(150));
+        GUILayout.Label("Material", FTStyles.Label, GUILayout.Width(150));
         _foliageTypes[_selectedIndex].Material = (Material)EditorGUILayout.ObjectField(_foliageTypes[_selectedIndex].Material, typeof(Material), false);
         GUILayout.EndHorizontal();
         #endregion
         GUILayout.Space(5);
         #region Painting area
-        GUILayout.Label("Painting", titleStyle);
+        GUILayout.Label("Painting", FTStyles.Title);
         GUILayout.Space(5);
         // Splatter distance
         GUILayout.BeginHorizontal();
-        GUILayout.Label("Splatter distance", EditorStyles.boldLabel, GUILayout.Width(150));
+        GUILayout.Label("Splatter distance", FTStyles.Label, GUILayout.Width(150));
         _foliageTypes[_selectedIndex].SplatterDistance = EditorGUILayout.FloatField(_foliageTypes[_selectedIndex].SplatterDistance);
         GUILayout.EndHorizontal();
         GUILayout.Space(5);
         // Layer mask
         GUILayout.BeginHorizontal();
-        GUILayout.Label("Layer mask", EditorStyles.boldLabel, GUILayout.Width(150));
+        GUILayout.Label("Layer mask", FTStyles.Label, GUILayout.Width(150));
         int flags = _foliageTypes[_selectedIndex].LayerMask.value;
         string[] options = Enumerable.Range(0, 32).Select(index => LayerMask.LayerToName(index)).Where(l => !string.IsNullOrEmpty(l)).ToArray();
         _foliageTypes[_selectedIndex].LayerMask = EditorGUILayout.MaskField(flags, options);
@@ -122,57 +144,57 @@ public class FTPaint : EditorWindow
         GUILayout.Space(5);
         // Random scale
         GUILayout.BeginHorizontal();
-        GUILayout.Label("Min/Max scale", EditorStyles.boldLabel, GUILayout.Width(150));
+        GUILayout.Label("Min/Max scale", FTStyles.Label, GUILayout.Width(150));
         _foliageTypes[_selectedIndex].MinimumScale = EditorGUILayout.FloatField(_foliageTypes[_selectedIndex].MinimumScale);
         _foliageTypes[_selectedIndex].MaximumScale = EditorGUILayout.FloatField(_foliageTypes[_selectedIndex].MaximumScale);
         GUILayout.EndHorizontal();
         #endregion
         GUILayout.Space(5);
         #region Placement area
-        GUILayout.Label("Placement", titleStyle);
+        GUILayout.Label("Placement", FTStyles.Title);
         GUILayout.Space(5);
         // Align to normal
         GUILayout.BeginHorizontal();
-        GUILayout.Label("Align to normal", EditorStyles.boldLabel, GUILayout.Width(150));
+        GUILayout.Label("Align to normal", FTStyles.Label, GUILayout.Width(150));
         _foliageTypes[_selectedIndex].AlignToNormal = EditorGUILayout.Toggle(_foliageTypes[_selectedIndex].AlignToNormal);
         GUILayout.EndHorizontal();
         GUILayout.Space(5);
         // Random rotation
         GUILayout.BeginHorizontal();
-        GUILayout.Label("Random rotation", EditorStyles.boldLabel, GUILayout.Width(150));
+        GUILayout.Label("Random rotation", FTStyles.Label, GUILayout.Width(150));
         _foliageTypes[_selectedIndex].RandomRotation = EditorGUILayout.Toggle(_foliageTypes[_selectedIndex].RandomRotation);
         GUILayout.EndHorizontal();
         GUILayout.Space(5);
         // Add offset
         GUILayout.BeginHorizontal();
-        GUILayout.Label("Z offset", EditorStyles.boldLabel, GUILayout.Width(150));
+        GUILayout.Label("Z offset", FTStyles.Label, GUILayout.Width(150));
         _foliageTypes[_selectedIndex].Offset = EditorGUILayout.FloatField(_foliageTypes[_selectedIndex].Offset);
         GUILayout.EndHorizontal();
         #endregion
         GUILayout.Space(5);
         #region Instance settings area
-        GUILayout.Label("Instance settings", titleStyle);
+        GUILayout.Label("Instance settings", FTStyles.Title);
         GUILayout.Space(5);
         // Cast shadows
         GUILayout.BeginHorizontal();
-        GUILayout.Label("Cast shadows", EditorStyles.boldLabel, GUILayout.Width(150));
+        GUILayout.Label("Cast shadows", FTStyles.Label, GUILayout.Width(150));
         _foliageTypes[_selectedIndex].RenderShadows = (ShadowCastingMode)EditorGUILayout.EnumFlagsField(_foliageTypes[_selectedIndex].RenderShadows);
         GUILayout.EndHorizontal();
         GUILayout.Space(5);
         // Receive shadows
         GUILayout.BeginHorizontal();
-        GUILayout.Label("Receive shadows", EditorStyles.boldLabel, GUILayout.Width(150));
+        GUILayout.Label("Receive shadows", FTStyles.Label, GUILayout.Width(150));
         _foliageTypes[_selectedIndex].ReceiveShadows = EditorGUILayout.Toggle(_foliageTypes[_selectedIndex].ReceiveShadows);
         GUILayout.EndHorizontal();
         #endregion
+
         GUILayout.EndScrollView();
-        #endregion
     }
 
     private void OnSceneGUI(SceneView sceneView)
     {
         DisplayBrushGizmos();
-        if (_validBrushPosition)
+        if (_brush.Display)
         {
             HandleSceneViewInputs();
         }
@@ -317,7 +339,6 @@ public class FTPaint : EditorWindow
         SceneView.duringSceneGui += this.OnSceneGUI;
 
         RefreshFoliageTypes();
-        Debug.Log(_paintMode);
         // HandlePaintMode(EPaintMode.Paint);
     }
 
@@ -342,11 +363,11 @@ public class FTPaint : EditorWindow
             Handles.color = _brush.Preset.OuterColor;
             Handles.DrawWireDisc(_brush.Position, _brush.Normal, _brush.Size);
             
-            _validBrushPosition = true;
+            _brush.Display = true;
         }
         else
         {
-            _validBrushPosition = false;
+            _brush.Display = false;
         }
     }
 
@@ -397,6 +418,7 @@ public class Brush
     public Vector3 RayDirection;
     public float Size = 1f;
     public float Density = 1f;
+    public bool Display = false;
 
     public BrushPreset Preset = new BrushPreset(innerColor: Color.white, outerColor: Color.white);
 }
@@ -410,56 +432,5 @@ public class BrushPreset
     {
         InnerColor = innerColor;
         OuterColor = outerColor;
-    }
-}
-
-public class LayerMaskField
-{
-    public static LayerMask CustomLayerMaskField(GUIContent label, LayerMask layerMask)
-    {
-        List<string> layerNames = new List<string>();
-        List<int> layerValues = new List<int>();
-
-        for (int i = 0; i < 32; i++)
-        {
-            string layerName = LayerMask.LayerToName(i);
-            if (!string.IsNullOrEmpty(layerName))
-            {
-                layerNames.Add(layerName);
-                layerValues.Add(i);
-            }
-        }
-
-        layerNames.Insert(0, "Nothing");
-        layerValues.Insert(0, 0);
-
-        layerNames.Insert(1, "Everything");
-        layerValues.Insert(1, -1);
-
-        int selectedValue = 0;
-
-        for (int i = 0; i < layerValues.Count; i++)
-        {
-            if ((layerMask.value & (1 << layerValues[i])) != 0)
-            {
-                selectedValue |= 1 << i;
-            }
-        }
-
-        selectedValue = EditorGUILayout.MaskField(label, selectedValue, layerNames.ToArray());
-
-        int newValue = 0;
-
-        for (int i = 0; i < layerValues.Count; i++)
-        {
-            if ((selectedValue & (1 << i)) != 0)
-            {
-                newValue |= 1 << layerValues[i];
-            }
-        }
-
-        layerMask.value = newValue;
-
-        return layerMask;
     }
 }
