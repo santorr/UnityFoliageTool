@@ -49,6 +49,7 @@ public class FoliageSplatterTool : MonoBehaviour
         {
             // Create a new Foliage data
             FoliageData newFoliageData = new FoliageData(
+                id: _foliageTypes[i].GetID,
                 mesh: _foliageTypes[i].Mesh,
                 material: _foliageTypes[i].Material,
                 renderShadows: _foliageTypes[i].RenderShadows,

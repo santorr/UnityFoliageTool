@@ -7,6 +7,7 @@ Shader "Foliage/Grass_shader"
 		[NoScaleOffset] _RMO("Roughness / Metallic / Occlusion", 2D) = "white" {}
 		_RoughnessIntensity("Roughness intensity", Range(0, 1)) = 0.75
 		_SpecularIntensity("Specular intensity", Range(0, 1)) = 0.5
+		// _SubsurfaceAmount("Subsurface amount", Range(0, 5)) = 1
 		_CullingDistance("Culling distance", Range(0, 100)) = 15
 		_CullingAngle("Culling angle", Range(0, 180)) = 90
 	}
@@ -34,14 +35,19 @@ Shader "Foliage/Grass_shader"
 		sampler2D _RMO;
 		float _RoughnessIntensity;
 		float _SpecularIntensity;
+		// float _SubsurfaceAmount;
 		fixed _CullingDistance;
 		fixed _CullingAngle;
 
 		struct Input {
-			float4 screenPos; // usefull for dithering
+			float4 screenPos;
+			float3 worldPos;
+			float3 worldViewDir;
+			float3 worldNormal;
 			float2 uv_MainTex : TEXCOORD0;
 			float2 uv_NormalMap : TEXCOORD1;
 			float2 uv_RMO : TEXCOORD2;
+			INTERNAL_DATA
 		};
 
 		struct GrassData {
@@ -141,8 +147,7 @@ Shader "Foliage/Grass_shader"
 
 		// Dithering
 		clip(albedoMap.a - DitherAlphaValue(IN.screenPos.xy));
-		// clip(albedoMap.a - 0.5);
-		// o.Alpha = albedoMap.a;
+
 	}
 	ENDCG
 	}

@@ -10,10 +10,12 @@ public class FoliageData
     public Material Material;
     public ShadowCastingMode RenderShadows;
     public bool ReceiveShadows = true;
+    public string ID;
     public List<Matrix4x4> Matrice = new List<Matrix4x4>();
     
-    public FoliageData(Mesh mesh, Material material, ShadowCastingMode renderShadows, bool receiveShadows) 
-    { 
+    public FoliageData(string id, Mesh mesh, Material material, ShadowCastingMode renderShadows, bool receiveShadows) 
+    {
+        ID = id;
         Mesh = mesh;
         Material = material;
         RenderShadows = renderShadows;

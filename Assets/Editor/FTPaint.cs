@@ -3,9 +3,17 @@ using UnityEditor;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
 
+public enum EPaintMode
+{
+    Paint,
+    Erase
+}
+
 public class FTPaint : EditorWindow
 {
-    private bool _paintMode = false;
+    private FTFoliageManager _foliageManager;
+
+    private EPaintMode _paintMode = EPaintMode.Paint;
 
     // Paint settings
     private Brush _brush = new Brush();
@@ -41,7 +49,14 @@ public class FTPaint : EditorWindow
         #endregion
 
         GUILayout.BeginHorizontal();
-        _paintMode = GUILayout.Toggle(_paintMode, "Paint", "Button", GUILayout.Height(30f));
+        if (GUILayout.Button("Paint", GUILayout.Height(30f)))
+        {
+            UpdatePaintMode(EPaintMode.Paint);
+        }
+        if (GUILayout.Button("Erase", GUILayout.Height(30f)))
+        {
+            UpdatePaintMode(EPaintMode.Erase);
+        }
         GUILayout.EndHorizontal();
 
         #region BRUSH
@@ -161,13 +176,24 @@ public class FTPaint : EditorWindow
 
     private void OnSceneGUI(SceneView sceneView) 
     {
-        if (_paintMode)
+        switch (_paintMode)
         {
-            DisplayBrushGizmos();
-            if (_validBrushPosition)
-            {
-                HandleSceneViewInputs();
-            }
+            case EPaintMode.Paint:
+                DisplayBrushGizmos();
+                if (_validBrushPosition)
+                {
+                    HandleSceneViewInputs();
+                }
+                break;
+            case EPaintMode.Erase:
+                DisplayBrushGizmos();
+                if (_validBrushPosition)
+                {
+                    HandleSceneViewInputs();
+                }
+                break;
+            default:
+                break;
         }
     }
 
@@ -179,13 +205,19 @@ public class FTPaint : EditorWindow
         #region PAINT
         if ((current.type == EventType.MouseDrag || current.type == EventType.MouseDown) && !current.alt)
         {
-            if (current.button == 0 && !current.shift)
+            if (current.button == 0)
             {
-                Paint();
-            }
-            else if (current.button == 0 && current.shift)
-            {
-                Remove();
+                switch (_paintMode)
+                {
+                    case EPaintMode.Paint:
+                        Paint();
+                        break;
+                    case EPaintMode.Erase:
+                        Remove();
+                        break;
+                    default:
+                        break;
+                }
             }
         }
         #endregion
@@ -209,8 +241,6 @@ public class FTPaint : EditorWindow
 
             }
         }
-
-
 
         #region Calculate position
         Vector3 perpendicularDirection = Vector3.Cross(_brush.Normal, _brush.RayDirection);
@@ -243,11 +273,75 @@ public class FTPaint : EditorWindow
         }
         #endregion
 
+        FoliageData foliageData = null;
+
+        for (int i=0; i<FoliageManager.DataContainer.FoliageData.Count; i++)
+        {
+            if (FoliageManager.DataContainer.FoliageData[i].ID == currentFoliageType.GetID)
+            {
+                foliageData = FoliageManager.DataContainer.FoliageData[i];
+                break;
+            }
+        }
+        if (foliageData == null)
+        {
+            // Create a new foliage Data and add it to data container
+            FoliageData newFoliageData = new FoliageData(
+                id: currentFoliageType.GetID,
+                mesh: currentFoliageType.Mesh,
+                material: currentFoliageType.Material,
+                renderShadows: currentFoliageType.RenderShadows,
+                receiveShadows: currentFoliageType.ReceiveShadows
+                );
+            FoliageManager.DataContainer.FoliageData.Add(newFoliageData);
+            foliageData = newFoliageData;
+        }
+
+        Matrix4x4 matrice = Matrix4x4.TRS(spawnPosition, finalRotation, randomScale);
+        foliageData.Matrice.Add(matrice);
+
+        // Update visualisation
+        FoliageManager.UpdateFoliage();
+
+        EditorUtility.SetDirty(FoliageManager.DataContainer);
+    }
+
+    // The foliage manager contain Foliage data container and is able to show foliage data
+    private FTFoliageManager FoliageManager
+    {
+        get
+        {
+            _foliageManager = (FTFoliageManager)FindObjectOfType(typeof(FTFoliageManager));
+            if (_foliageManager == null)
+            {
+                GameObject foliageManager = new GameObject("FT_FoliageManager");
+                FTFoliageManager test = foliageManager.AddComponent<FTFoliageManager>();
+                _foliageManager = test;
+            }
+            return _foliageManager;
+        }
     }
 
     private void Remove()
     {
         FoliageType currentFoliageType = _foliageTypes[_selectedIndex];
+
+        for (int i=0; i< FoliageManager.DataContainer.FoliageData.Count; i++)
+        {
+            if (FoliageManager.DataContainer.FoliageData[i].ID == currentFoliageType.GetID)
+            {
+                for (int j=0; j< FoliageManager.DataContainer.FoliageData[i].Matrice.Count; j++)
+                {
+                    if (Vector3.Distance(_brush.Position, FoliageManager.DataContainer.FoliageData[i].Position(j)) < _brush.Size)
+                    {
+                        FoliageManager.DataContainer.FoliageData[i].Matrice.RemoveAt(j);
+                        FoliageManager.UpdateFoliage();
+                        EditorUtility.SetDirty(FoliageManager.DataContainer);
+                    }
+                }
+            }
+        }
+
     }
 
     void OnFocus()
@@ -256,6 +350,7 @@ public class FTPaint : EditorWindow
         SceneView.duringSceneGui += this.OnSceneGUI;
 
         RefreshFoliageTypes();
+        UpdatePaintMode(EPaintMode.Paint);
     }
 
     void OnDestroy()
@@ -274,9 +369,9 @@ public class FTPaint : EditorWindow
             _brush.Normal = hit.normal.normalized;
             _brush.RayDirection = ray.direction;
 
-            Handles.color = new Color(0.27f, 0.38f, 0.49f, 0.25f);
+            Handles.color = _brush.Preset.InnerColor;
             Handles.DrawSolidDisc(_brush.Position, _brush.Normal, _brush.Size);
-            Handles.color = new Color(0.27f, 0.38f, 0.49f, 1);
+            Handles.color = _brush.Preset.OuterColor;
             Handles.DrawWireDisc(_brush.Position, _brush.Normal, _brush.Size);
             
             _validBrushPosition = true;
@@ -310,6 +405,21 @@ public class FTPaint : EditorWindow
         float randomZ = Random.Range(minimum, maximum);
         return new Vector3(randomX, randomY, randomZ);
     }
+
+    private void UpdatePaintMode(EPaintMode newPaintMode)
+    {
+        _paintMode = newPaintMode;
+        switch (_paintMode)
+        {
+            case EPaintMode.Paint:
+                _brush.Preset = new BrushPreset(innerColor: new Color(0.27f, 0.38f, 0.49f, 0.25f), outerColor: new Color(0.27f, 0.38f, 0.49f, 1));
+                break;
+            case EPaintMode.Erase:
+                _brush.Preset = new BrushPreset(innerColor: new Color(1f, 0f, 0f, 0.25f), outerColor: new Color(1f, 0f, 0f, 1));
+                break;
+            default: break;
+        }
+    }
 }
 
 public class Brush
@@ -319,4 +429,18 @@ public class Brush
     public Vector3 RayDirection;
     public float Size = 1f;
     public float Density = 1f;
+
+    public BrushPreset Preset;
+}
+
+public class BrushPreset
+{
+    public Color InnerColor;
+    public Color OuterColor;
+
+    public BrushPreset(Color innerColor, Color outerColor)
+    {
+        InnerColor = innerColor;
+        OuterColor = outerColor;
+    }
 }

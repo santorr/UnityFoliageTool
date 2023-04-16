@@ -1,4 +1,7 @@
+using System;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.SocialPlatforms;
 
 /// <summary>
 /// This class allow you to setup all parameters to procedurally generate foliage.
@@ -29,4 +32,20 @@ public class FoliageType : ScriptableObject
     [Header("Settings")]
     [Min(0)] public float SplatterDistance = 1f;
     [Min(0)] public float RandomizeDistance = 1f;
+
+
+    public string GetID
+    {
+        get
+        {
+            if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(this, out string guid, out long localId))
+            {
+                return guid;
+            }
+            else
+            {
+                return null;
+            }
+        }
+    }
 }
