@@ -16,7 +16,7 @@ MonoBehaviour:
   Material: {fileID: 2100000, guid: 892db6d489568844a80da63b549100e4, type: 2}
   LayerMask:
     serializedVersion: 2
-    m_Bits: 1
+    m_Bits: 4294967295
   RenderShadows: 0
   ReceiveShadows: 1
   AlignToNormal: 1

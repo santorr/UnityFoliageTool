@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
+using System.Linq;
 
 public enum EPaintMode
 {
@@ -13,7 +14,7 @@ public class FTPaint : EditorWindow
 {
     private FTFoliageManager _foliageManager;
 
-    private EPaintMode _paintMode = EPaintMode.Paint;
+    private EPaintMode _paintMode;
 
     // Paint settings
     private Brush _brush = new Brush();
@@ -48,16 +49,8 @@ public class FTPaint : EditorWindow
         titleStyle.normal.background = tex;
         #endregion
 
-        GUILayout.BeginHorizontal();
-        if (GUILayout.Button("Paint", GUILayout.Height(30f)))
-        {
-            UpdatePaintMode(EPaintMode.Paint);
-        }
-        if (GUILayout.Button("Erase", GUILayout.Height(30f)))
-        {
-            UpdatePaintMode(EPaintMode.Erase);
-        }
-        GUILayout.EndHorizontal();
+        EPaintMode newPaintMode = (EPaintMode)EditorGUILayout.EnumPopup("Mode", _paintMode, "Button");
+        if (newPaintMode != _paintMode) { HandlePaintMode(newPaintMode); }
 
         #region BRUSH
         GUILayout.Label("Brush", titleStyle);
@@ -122,7 +115,9 @@ public class FTPaint : EditorWindow
         // Layer mask
         GUILayout.BeginHorizontal();
         GUILayout.Label("Layer mask", EditorStyles.boldLabel, GUILayout.Width(150));
-        _foliageTypes[_selectedIndex].LayerMask = EditorGUILayout.LayerField(_foliageTypes[_selectedIndex].LayerMask);
+        int flags = _foliageTypes[_selectedIndex].LayerMask.value;
+        string[] options = Enumerable.Range(0, 32).Select(index => LayerMask.LayerToName(index)).Where(l => !string.IsNullOrEmpty(l)).ToArray();
+        _foliageTypes[_selectedIndex].LayerMask = EditorGUILayout.MaskField(flags, options);
         GUILayout.EndHorizontal();
         GUILayout.Space(5);
         // Random scale
@@ -174,26 +169,12 @@ public class FTPaint : EditorWindow
         #endregion
     }
 
-    private void OnSceneGUI(SceneView sceneView) 
+    private void OnSceneGUI(SceneView sceneView)
     {
-        switch (_paintMode)
+        DisplayBrushGizmos();
+        if (_validBrushPosition)
         {
-            case EPaintMode.Paint:
-                DisplayBrushGizmos();
-                if (_validBrushPosition)
-                {
-                    HandleSceneViewInputs();
-                }
-                break;
-            case EPaintMode.Erase:
-                DisplayBrushGizmos();
-                if (_validBrushPosition)
-                {
-                    HandleSceneViewInputs();
-                }
-                break;
-            default:
-                break;
+            HandleSceneViewInputs();
         }
     }
 
@@ -213,7 +194,7 @@ public class FTPaint : EditorWindow
                         Paint();
                         break;
                     case EPaintMode.Erase:
-                        Remove();
+                        Erase();
                         break;
                     default:
                         break;
@@ -273,16 +254,8 @@ public class FTPaint : EditorWindow
         }
         #endregion
 
-        FoliageData foliageData = null;
+        FoliageData foliageData = FoliageManager.DataContainer.GetFoliageDataFromId(currentFoliageType.GetID);
 
-        for (int i=0; i<FoliageManager.DataContainer.FoliageData.Count; i++)
-        {
-            if (FoliageManager.DataContainer.FoliageData[i].ID == currentFoliageType.GetID)
-            {
-                foliageData = FoliageManager.DataContainer.FoliageData[i];
-                break;
-            }
-        }
         if (foliageData == null)
         {
             // Create a new foliage Data and add it to data container
@@ -322,23 +295,17 @@ public class FTPaint : EditorWindow
         }
     }
 
-    private void Remove()
+    private void Erase()
     {
-        FoliageType currentFoliageType = _foliageTypes[_selectedIndex];
+        FoliageData foliageToRemove = FoliageManager.DataContainer.GetFoliageDataFromId(_foliageTypes[_selectedIndex].GetID);
 
-        for (int i=0; i< FoliageManager.DataContainer.FoliageData.Count; i++)
+        for (int i = 0; i < foliageToRemove.Matrice.Count; i++)
         {
-            if (FoliageManager.DataContainer.FoliageData[i].ID == currentFoliageType.GetID)
+            if (Vector3.Distance(_brush.Position, foliageToRemove.Position(i)) < _brush.Size)
             {
-                for (int j=0; j< FoliageManager.DataContainer.FoliageData[i].Matrice.Count; j++)
-                {
-                    if (Vector3.Distance(_brush.Position, FoliageManager.DataContainer.FoliageData[i].Position(j)) < _brush.Size)
-                    {
-                        FoliageManager.DataContainer.FoliageData[i].Matrice.RemoveAt(j);
-                        FoliageManager.UpdateFoliage();
-                        EditorUtility.SetDirty(FoliageManager.DataContainer);
-                    }
-                }
+                foliageToRemove.Matrice.RemoveAt(i);
+                FoliageManager.UpdateFoliage();
+                EditorUtility.SetDirty(FoliageManager.DataContainer);
             }
         }
 
@@ -350,7 +317,8 @@ public class FTPaint : EditorWindow
         SceneView.duringSceneGui += this.OnSceneGUI;
 
         RefreshFoliageTypes();
-        UpdatePaintMode(EPaintMode.Paint);
+        Debug.Log(_paintMode);
+        // HandlePaintMode(EPaintMode.Paint);
     }
 
     void OnDestroy()
@@ -406,7 +374,7 @@ public class FTPaint : EditorWindow
         return new Vector3(randomX, randomY, randomZ);
     }
 
-    private void UpdatePaintMode(EPaintMode newPaintMode)
+    private void HandlePaintMode(EPaintMode newPaintMode)
     {
         _paintMode = newPaintMode;
         switch (_paintMode)
@@ -430,7 +398,7 @@ public class Brush
     public float Size = 1f;
     public float Density = 1f;
 
-    public BrushPreset Preset;
+    public BrushPreset Preset = new BrushPreset(innerColor: Color.white, outerColor: Color.white);
 }
 
 public class BrushPreset
@@ -442,5 +410,56 @@ public class BrushPreset
     {
         InnerColor = innerColor;
         OuterColor = outerColor;
+    }
+}
+
+public class LayerMaskField
+{
+    public static LayerMask CustomLayerMaskField(GUIContent label, LayerMask layerMask)
+    {
+        List<string> layerNames = new List<string>();
+        List<int> layerValues = new List<int>();
+
+        for (int i = 0; i < 32; i++)
+        {
+            string layerName = LayerMask.LayerToName(i);
+            if (!string.IsNullOrEmpty(layerName))
+            {
+                layerNames.Add(layerName);
+                layerValues.Add(i);
+            }
+        }
+
+        layerNames.Insert(0, "Nothing");
+        layerValues.Insert(0, 0);
+
+        layerNames.Insert(1, "Everything");
+        layerValues.Insert(1, -1);
+
+        int selectedValue = 0;
+
+        for (int i = 0; i < layerValues.Count; i++)
+        {
+            if ((layerMask.value & (1 << layerValues[i])) != 0)
+            {
+                selectedValue |= 1 << i;
+            }
+        }
+
+        selectedValue = EditorGUILayout.MaskField(label, selectedValue, layerNames.ToArray());
+
+        int newValue = 0;
+
+        for (int i = 0; i < layerValues.Count; i++)
+        {
+            if ((selectedValue & (1 << i)) != 0)
+            {
+                newValue |= 1 << layerValues[i];
+            }
+        }
+
+        layerMask.value = newValue;
+
+        return layerMask;
     }
 }
