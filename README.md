@@ -12,11 +12,11 @@ Work in progress tool based on GPU instancing to create a foliage placement tool
 - Shader : base color, normal, RMO (roughness, metallic, ambient occlusion), specular
 - Paint tool
 - Erase tool
+- Support multiple instance foliage
 
 Features missing :
 - Instance rotation
 - Shader : highlight
-- Support multiple instance foliage
 - More optimization / clean
 
 ![alt text](/Assets/Screenshots/Screen.jpg)
