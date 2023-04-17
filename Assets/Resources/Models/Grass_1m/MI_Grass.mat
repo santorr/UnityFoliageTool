@@ -98,8 +98,8 @@ Material:
     m_Ints: []
     m_Floats:
     - _BumpScale: 1
-    - _CullingAngle: 180
-    - _CullingDistance: 100
+    - _CullingAngle: 90
+    - _CullingDistance: 50
     - _Cutoff: 0.822
     - _DetailMapDepthBias: 1
     - _DetailNormalMapScale: 1

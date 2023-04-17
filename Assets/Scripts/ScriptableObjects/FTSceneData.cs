@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "FoliageDataContainer", menuName = "Foliage/Data Container")]
+[CreateAssetMenu(fileName = "FTSceneData", menuName = "Foliage/Scene data")]
 public class FTSceneData : ScriptableObject
 {
     [SerializeField] public List<FoliageData> FoliageData = new List<FoliageData>();

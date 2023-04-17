@@ -3,6 +3,9 @@ using UnityEditor;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
 using System.Linq;
+using System.IO;
+using UnityEditor.SceneManagement;
+using UnityEngine.SceneManagement;
 
 public class FTPaint : EditorWindow
 {
@@ -18,9 +21,10 @@ public class FTPaint : EditorWindow
             Label = new GUIStyle();
             Label.fontSize = 12;
             Label.normal.textColor = new Color(0.85f, 0.85f, 0.85f, 1f);
-            Label.fontStyle = FontStyle.Bold;
+            // Label.fontStyle = FontStyle.Bold;
             Label.padding = new RectOffset(5, 5, 0, 0);
             Label.alignment = TextAnchor.MiddleLeft;
+            Label.wordWrap = true;
 
             // Title
             Title = new GUIStyle();
@@ -82,6 +86,35 @@ public class FTPaint : EditorWindow
     // While cursor move on tab
     private void OnGUI()
     {
+        // Check ici si la scene contient un un FTSceneManager
+        if (FindObjectOfType<FTSceneManager>() == null)
+        {
+            GUILayout.Label("You need at least one FTSceneManager in the scene. You can create it manually by adding the script 'FTSceneManager' to an empty GameObject or by clicking on the button.", FTStyles.Label);
+
+            if (GUILayout.Button("Create scene manager", GUILayout.Height(30)))
+            {
+                _sceneManager = CreateSceneManager();
+            }
+            return;
+        }
+
+        // Check ici si le FTSceneManager contient un FTSceneData
+        if (FindObjectOfType<FTSceneManager>().SceneData == null)
+        {
+            GUILayout.Label("The 'FTSceneManager' has no input FTSceneData. It means you can't store foliage data. You can create it manually by right clicking in your content 'Create > Foliage > Data container'.\n" +
+                "Or drag and drop an existing FTSceneData if you already have for this scene.", FTStyles.Label);
+
+            _sceneManager.SceneData = (FTSceneData)EditorGUILayout.ObjectField(_sceneManager.SceneData, typeof(FTSceneData), false);
+
+            GUILayout.Label("You can also create one by clicking on the button above. It will create a FTScene data at scene location in the content, make sure you don't have one because it will overwrite.", FTStyles.Label);
+            if (GUILayout.Button("Create scene data", GUILayout.Height(30)))
+            {
+                _sceneManager.SceneData = CreateSceneData();
+            }
+
+            return;
+        }
+
         EPaintMode newPaintMode = (EPaintMode)EditorGUILayout.EnumPopup("Mode", _paintMode, "Button", GUILayout.Height(30));
         if (newPaintMode != _paintMode) { HandlePaintMode(newPaintMode); }
 
@@ -396,20 +429,10 @@ public class FTPaint : EditorWindow
     {
         get
         {
-            if (_sceneManager != null)
-            {
+            if (_sceneManager == null) 
+            { 
+                _sceneManager = FindAnyObjectByType<FTSceneManager>();
                 return _sceneManager;
-            }
-
-            _sceneManager = (FTSceneManager)FindObjectOfType(typeof(FTSceneManager));
-
-            if (_sceneManager != null)
-            {
-                return _sceneManager;
-            }
-            else
-            {
-                _sceneManager = CreateSceneManager();
             }
             return _sceneManager;
         }
@@ -420,6 +443,37 @@ public class FTPaint : EditorWindow
     {
         GameObject FTManagerObject = new GameObject("FT_Manager");
         return FTManagerObject.AddComponent<FTSceneManager>();
+    }
+
+    private FTSceneData CreateSceneData()
+    {
+        string sceneDirectory;
+        string assetName;
+        string completePath;
+        FTSceneData asset;
+        Scene activeScene;
+
+        asset = ScriptableObject.CreateInstance<FTSceneData>();
+        activeScene = EditorSceneManager.GetActiveScene();
+
+        assetName = "FTSceneData_" + activeScene.name + ".asset";
+
+        try
+        {
+            sceneDirectory = Path.GetDirectoryName(activeScene.path);
+        }
+        catch (System.ArgumentException)
+        {
+            Debug.LogWarning("Path to the current scene not found, save your scene before generate FTSceneData.");
+            return null;
+        }
+
+        completePath = Path.Combine(sceneDirectory, assetName);
+
+        AssetDatabase.CreateAsset(asset, completePath);
+        AssetDatabase.SaveAssets();
+
+        return asset;
     }
 }
 
