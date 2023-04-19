@@ -6,6 +6,7 @@ using System.Linq;
 using System.IO;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class FTPaint : EditorWindow
 {
@@ -43,6 +44,7 @@ public class FTPaint : EditorWindow
     // Paint enum
     enum EPaintMode
     {
+        None,
         Paint,
         Erase
     }
@@ -115,7 +117,9 @@ public class FTPaint : EditorWindow
             return;
         }
 
-        EPaintMode newPaintMode = (EPaintMode)EditorGUILayout.EnumPopup("Mode", _paintMode, "Button", GUILayout.Height(30));
+        GUILayout.Space(5);
+
+        EPaintMode newPaintMode = (EPaintMode)EditorGUILayout.EnumPopup("Mode", _paintMode, GUILayout.Height(30));
         if (newPaintMode != _paintMode) { HandlePaintMode(newPaintMode); }
 
         #region BRUSH
@@ -150,6 +154,7 @@ public class FTPaint : EditorWindow
             foliageTypesGUI.Add(new GUIContent(name, texture, "Foliage type"));
         }
         _selectedIndex = GUILayout.SelectionGrid(_selectedIndex, foliageTypesGUI.ToArray(), numberColumn, GUILayout.Height(50));
+
         GUILayout.EndScrollView();
         #endregion
 
@@ -159,6 +164,12 @@ public class FTPaint : EditorWindow
     // While tab is open
     private void OnSceneGUI(SceneView sceneView)
     {
+        if (_paintMode == EPaintMode.None)
+        {
+            _brush.Display = false;
+            return;
+        }
+
         DrawBrush();
 
         if (_brush.Display)
@@ -509,5 +520,13 @@ public class FTBrush
             InnerColor = innerColor;
             OuterColor = outerColor;
         }
+    }
+}
+
+public class CustomToggle: Toggle
+{
+    public CustomToggle(bool value, GUIContent content, GUIStyle style)
+    {
+
     }
 }

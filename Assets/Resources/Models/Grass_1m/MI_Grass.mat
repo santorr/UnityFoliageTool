@@ -97,6 +97,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _AlphaClip: 0.33
     - _BumpScale: 1
     - _CullingAngle: 90
     - _CullingDistance: 50
@@ -112,7 +113,7 @@ Material:
     - _GlossyReflections: 1
     - _Metallic: 0
     - _Mode: 0
-    - _NormalIntensity: 5
+    - _NormalIntensity: 3
     - _OcclusionStrength: 1
     - _Parallax: 0.02
     - _ReflectionStrength: 0.5
@@ -124,6 +125,7 @@ Material:
     - _SrcBlend: 1
     - _SubsurfaceAmount: 5
     - _UVSec: 0
+    - _UseDithering: 0
     - _VertexOffsetAmount: 0
     - _ZWrite: 1
     m_Colors:

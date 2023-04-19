@@ -10,6 +10,8 @@ Shader "Foliage/Grass_shader"
 		// _SubsurfaceAmount("Subsurface amount", Range(0, 5)) = 1
 		_CullingDistance("Culling distance", Range(0, 100)) = 15
 		_CullingAngle("Culling angle", Range(0, 180)) = 90
+		[MaterialToggle] _UseDithering("Use dithering", Float) = 0
+		[HideIf(_UseDithering)] _AlphaClip("Alpha clip", Range(0, 1)) = 0.5
 	}
 		SubShader{
         Tags
@@ -38,6 +40,8 @@ Shader "Foliage/Grass_shader"
 		// float _SubsurfaceAmount;
 		fixed _CullingDistance;
 		fixed _CullingAngle;
+		float _UseDithering;
+		float _AlphaClip;
 
 		struct Input {
 			float4 screenPos;
@@ -50,13 +54,8 @@ Shader "Foliage/Grass_shader"
 			INTERNAL_DATA
 		};
 
-		struct GrassData {
-			float3 position;
-			float3 scale;
-		};
-
 		#ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
-			StructuredBuffer<GrassData> grassData;
+			StructuredBuffer<float4x4> grassData;
 		#endif
 	
 
@@ -108,26 +107,15 @@ Shader "Foliage/Grass_shader"
 	void setup()
 	{
 		#ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
-
-		float4 position = float4(grassData[unity_InstanceID].position, 1); // Position
-
-		float scale = grassData[unity_InstanceID].scale; // Scale
-
-
+		/*
 		if(_CullingDistance > 0)
 		{
 			// On calcul la distance
 			scale = mul(scale, IsVisible(position));
 		}
-
-		unity_ObjectToWorld._11_21_31_41 = float4(scale, 0, 0, 0);
-		unity_ObjectToWorld._12_22_32_42 = float4(0, scale, 0, 0);
-		unity_ObjectToWorld._13_23_33_43 = float4(0, 0, scale, 0);
-		unity_ObjectToWorld._14_24_34_44 = float4(position.xyz, 1);
-
-		unity_WorldToObject = unity_ObjectToWorld;
-		unity_WorldToObject._14_24_34 *= -1;
-		unity_WorldToObject._11_22_33 = 1.0f / unity_WorldToObject._11_22_33;
+		*/
+		unity_ObjectToWorld = grassData[unity_InstanceID];
+		unity_WorldToObject = transpose(unity_ObjectToWorld);
 
 		#endif
 	}
@@ -146,7 +134,8 @@ Shader "Foliage/Grass_shader"
 		o.Smoothness = 1 - clamp(mul(rmoMap.r, _RoughnessIntensity),0 , 1);
 
 		// Dithering
-		clip(albedoMap.a - DitherAlphaValue(IN.screenPos.xy));
+		float clipValue = _UseDithering  ? DitherAlphaValue(IN.screenPos.xy) : _AlphaClip;
+		clip(albedoMap.a - clipValue);
 
 	}
 	ENDCG

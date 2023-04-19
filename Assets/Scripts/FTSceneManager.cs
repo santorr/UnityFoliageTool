@@ -1,7 +1,4 @@
 using System.Collections.Generic;
-using System.IO;
-using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine;
 
 [ExecuteAlways]
@@ -19,6 +16,7 @@ public class FTSceneManager : MonoBehaviour
     {
         public Vector3 Position;
         public Vector3 Scale;
+        public Vector4 Rotation;
     }
 
     private void Awake()
@@ -28,12 +26,12 @@ public class FTSceneManager : MonoBehaviour
 
     public void UpdateFoliage()
     {
+        ClearBuffers();
+
         if (SceneData == null)
         {
             return;
         }
-
-        // ClearBuffers();
 
         // Initialize buffer arrays with the right number of desired foliage
         _argsBuffers = new ComputeBuffer[SceneData.FoliageData.Count];
@@ -42,7 +40,7 @@ public class FTSceneManager : MonoBehaviour
         // Loop over all foliage to create buffers
         for (int i = 0; i < SceneData.FoliageData.Count; i++)
         {
-            _foliageBuffers[i] = new ComputeBuffer(SceneData.FoliageData[i].Matrice.Count, sizeof(float) * 4);
+            _foliageBuffers[i] = new ComputeBuffer(SceneData.FoliageData[i].Matrice.Count, sizeof(float) * 16);
             _argsBuffers[i] = new ComputeBuffer(1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments);
 
             _buffersToRelease.Add(_foliageBuffers[i]);
@@ -84,15 +82,15 @@ public class FTSceneManager : MonoBehaviour
 
         int instanceCount = foliageData.Matrice.Count;
 
-        foliageBuffer = new ComputeBuffer(instanceCount, 24);
+        foliageBuffer = new ComputeBuffer(instanceCount, sizeof(float) * 16);
         _buffersToRelease.Add(foliageBuffer);
 
-        GrassData[] data = new GrassData[instanceCount];
+        // GrassData[] data = new GrassData[instanceCount];
+        Matrix4x4[] data = new Matrix4x4[instanceCount];
 
         for (int i = 0; i < instanceCount; i++)
         {
-            data[i].Position = foliageData.Position(i);
-            data[i].Scale = foliageData.Scale(i);
+            data[i] = foliageData.Matrice[i];
         }
 
         foliageBuffer.SetData(data);

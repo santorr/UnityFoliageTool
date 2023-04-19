@@ -24,15 +24,15 @@ public class FoliageData
 
     public Vector3 Scale(int matriceIndex)
     {
-        Matrix4x4 desiredMatrice = Matrice[matriceIndex];
-        return desiredMatrice.lossyScale;
+        Matrix4x4 m = Matrice[matriceIndex];
+        return m.lossyScale;
         // return new Vector3(desiredMatrice.m03, desiredMatrice.m13, desiredMatrice.m23);
     }
 
     public Vector3 Position(int matriceIndex)
     {
-        Matrix4x4 desiredMatrice = Matrice[matriceIndex];
-        return new Vector3(desiredMatrice.m03, desiredMatrice.m13, desiredMatrice.m23);
+        Matrix4x4 m = Matrice[matriceIndex];
+        return new Vector3(m.m03, m.m13, m.m23);
     }
 
     public Matrix4x4[] VisibleMatrices()
