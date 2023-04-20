@@ -21,6 +21,6 @@ Features missing :
 - Wind system
 - More optimization / clean
 
-![alt text](/Assets/Screenshots/Screen.jpg)
+![alt text](/Assets/FoliageTool/Screenshots/Screenshot.jpg)
 
-![alt text](/Assets/Screenshots/Tool.JPG)
+![alt text](/Assets/FoliageTool/Screenshots/Tool.JPG)
