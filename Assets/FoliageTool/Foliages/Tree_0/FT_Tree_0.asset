@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8c7f8f9877474441ab51d263337ed4f, type: 3}
+  m_Name: FT_Tree_0
+  m_EditorClassIdentifier: 
+  Mesh: {fileID: -8650999628810460405, guid: 7b71437441ed9bf44ac7f70646028586, type: 3}
+  Material: {fileID: 2100000, guid: f14a0122eeb3db049960eb7ebf000359, type: 2}
+  LayerMask:
+    serializedVersion: 2
+    m_Bits: 8
+  RenderShadows: 1
+  ReceiveShadows: 1
+  AlignToNormal: 1
+  RandomRotation: 1
+  Offset: 0
+  MinimumScale: 0.5
+  MaximumScale: 1.5
+  SplatterDistance: 0.5
+  RandomizeDistance: 0.25
