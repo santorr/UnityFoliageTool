@@ -13,10 +13,10 @@ Work in progress tool based on GPU instancing to create a foliage placement tool
 - Paint tool
 - Erase tool
 - Support multiple instance foliage
+- Instance rotation
 
 Features missing :
 - Paint control density
-- Instance rotation
 - Shader : highlight, wind
 - Wind system
 - More optimization / clean
