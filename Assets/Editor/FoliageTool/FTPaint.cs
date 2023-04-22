@@ -57,7 +57,7 @@ public class FTPaint : EditorWindow
         Erase
     }
 
-    FTBrush _brush = new FTBrush();
+    public readonly FTBrush Brush = new FTBrush();
     FTSceneManager _sceneManager;
     EPaintMode _paintMode;
     int _selectedIndex;
@@ -136,24 +136,24 @@ public class FTPaint : EditorWindow
         // Size parameter
         GUILayout.BeginHorizontal();
         GUILayout.Label("Brush size", FTStyles.Label, GUILayout.Width(150));
-        _brush.Size = (float)GUILayout.HorizontalSlider(_brush.Size, _brush.MinSize, _brush.MaxSize);
-        GUILayout.Label(_brush.Size.ToString("F1"), GUILayout.Width(50));
+        Brush.Size = (float)GUILayout.HorizontalSlider(Brush.Size, Brush.MinSize, Brush.MaxSize);
+        GUILayout.Label(Brush.Size.ToString("F1"), GUILayout.Width(50));
         GUILayout.EndHorizontal();
         GUILayout.Space(5);
 
         // Density parameter
         GUILayout.BeginHorizontal();
         GUILayout.Label("Brush density (/m2)", FTStyles.Label, GUILayout.Width(150));
-        _brush.Density = (float)GUILayout.HorizontalSlider(_brush.Density, _brush.MinDensity, _brush.MaxDensity);
-        GUILayout.Label(_brush.Density.ToString("F2"), GUILayout.Width(50));
+        Brush.Density = (float)GUILayout.HorizontalSlider(Brush.Density, Brush.MinDensity, Brush.MaxDensity);
+        GUILayout.Label(Brush.Density.ToString("F2"), GUILayout.Width(50));
         GUILayout.EndHorizontal();
         GUILayout.Space(5);
 
         // Disorder parameter
         GUILayout.BeginHorizontal();
         GUILayout.Label("Brush disorder", FTStyles.Label, GUILayout.Width(150));
-        _brush.Disorder = (float)GUILayout.HorizontalSlider(_brush.Disorder, _brush.MinDisorder, _brush.MaxDisorder);
-        GUILayout.Label(_brush.Disorder.ToString("F2"), GUILayout.Width(50));
+        Brush.Disorder = (float)GUILayout.HorizontalSlider(Brush.Disorder, Brush.MinDisorder, Brush.MaxDisorder);
+        GUILayout.Label(Brush.Disorder.ToString("F2"), GUILayout.Width(50));
         GUILayout.EndHorizontal();
         GUILayout.Space(5);
         #endregion
@@ -185,13 +185,13 @@ public class FTPaint : EditorWindow
     {
         if (_paintMode == EPaintMode.None)
         {
-            _brush.Display = false;
+            Brush.Display = false;
             return;
         }
 
         DrawBrush();
 
-        if (_brush.Display)
+        if (Brush.Display)
         {
             HandleSceneViewInputs();
         }
@@ -200,32 +200,71 @@ public class FTPaint : EditorWindow
     // Handle event in the scene
     private void HandleSceneViewInputs()
     {
-        Event current = Event.current;
+        Event e = Event.current;
         int controlId = GUIUtility.GetControlID(GetHashCode(), FocusType.Passive);
 
-        if (current.type == EventType.ScrollWheel)
+        // If scroll whell + alt = increase/decrease brush size
+        if (e.type == EventType.ScrollWheel && e.shift)
         {
+            e.Use();
+
             float delta = 0.5f;
 
-            if (current.delta.y > 0)
+            if (e.delta.y > 0)
             {
-                _brush.Size -= delta;
+                Brush.Size -= delta;
             }
             else
             {
-                _brush.Size += delta;
+                Brush.Size += delta;
             }
-            
+            Repaint();
         }
 
-        if ((current.type == EventType.MouseDrag || current.type == EventType.MouseDown) && !current.alt)
+        // If scroll whell + shift = increase/decrease brush density
+        if (e.type == EventType.ScrollWheel && e.control)
         {
-            if (current.button == 0)
+            e.Use();
+
+            float delta = 0.5f;
+
+            if (e.delta.y > 0)
+            {
+                Brush.Density -= delta;
+            }
+            else
+            {
+                Brush.Density += delta;
+            }
+            Repaint();
+        }
+
+        // If scroll whell + shift = increase/decrease brush disorder
+        if (e.type == EventType.ScrollWheel && e.alt)
+        {
+            e.Use();
+
+            float delta = 0.1f;
+
+            if (e.delta.y > 0)
+            {
+                Brush.Disorder -= delta;
+            }
+            else
+            {
+                Brush.Disorder += delta;
+            }
+            Repaint();
+        }
+
+        if ((e.type == EventType.MouseDrag || e.type == EventType.MouseDown) && !e.alt)
+        {
+            if (e.button == 0)
             {
                 switch (_paintMode)
                 {
                     case EPaintMode.Paint:
-                        if (current.shift)
+                        if (e.shift)
                         {
                             Erase();
                             return;
@@ -346,17 +385,16 @@ public class FTPaint : EditorWindow
     {
         FoliageType currentFoliageType = _foliageTypes[_selectedIndex];
 
-        Vector3[] points = _brush.GetPoints();
+        Vector3[] points = Brush.GetPoints();
 
         // Pour chacun des points du brush on lance un rayon qui va tester les collisions
         for (int i = 0; i < points.Length; i++)
         {
             RaycastHit hit;
-            Vector3 startRayPosition = points[i] + _brush.Normal * _brush.DebugLinePointSize;
-            Vector3 rayDirection = _brush.Normal * -1;
-            float rayDistance = _brush.DebugLinePointSize + 0.5f;
+            Vector3 startRayPosition = points[i] + Brush.Normal * Brush.DebugLinePointSize;
+            float rayDistance = Brush.DebugLinePointSize + 0.5f;
 
-            if (Physics.Raycast(startRayPosition, rayDirection, out hit, rayDistance, currentFoliageType.LayerMask))
+            if (Physics.Raycast(startRayPosition, Brush.InvertNormal, out hit, rayDistance, currentFoliageType.LayerMask))
             {
                 // Scale
                 Vector3 randomScale = FTUtils.RandomUniformVector3(minimum: currentFoliageType.MinimumScale, maximum: currentFoliageType.MaximumScale);
@@ -409,7 +447,7 @@ public class FTPaint : EditorWindow
 
         for (int i = 0; i < foliageToRemove.Matrice.Count; i++)
         {
-            if (Vector3.Distance(_brush.Position, foliageToRemove.Position(i)) < _brush.Size/2)
+            if (Vector3.Distance(Brush.Position, foliageToRemove.Position(i)) < Brush.Radius)
             {
                 foliageToRemove.Matrice.RemoveAt(i);
             }
@@ -425,21 +463,21 @@ public class FTPaint : EditorWindow
 
         if (Physics.Raycast(ray, out hit, Mathf.Infinity))
         {
-            _brush.Display = true;
-            _brush.Position = hit.point;
-            _brush.Normal = hit.normal.normalized;
+            Brush.Display = true;
+            Brush.Position = hit.point;
+            Brush.Normal = hit.normal.normalized;
 
             switch (_paintMode)
             {
                 case EPaintMode.None:
-                    _brush.Display = false;
+                    Brush.Display = false;
                     return;
                 case EPaintMode.Paint:
-                    _brush.DrawCircles(colorPreset: _brush.PaintPreset);
-                    _brush.DrawPoints();
+                    Brush.DrawCircles(colorPreset: Brush.PaintPreset);
+                    Brush.DrawPoints();
                     break;
                 case EPaintMode.Erase:
-                    _brush.DrawCircles(colorPreset: _brush.ErasePreset);
+                    Brush.DrawCircles(colorPreset: Brush.ErasePreset);
                     break;
                 default: 
                     break;
@@ -447,7 +485,7 @@ public class FTPaint : EditorWindow
         }
         else
         {
-            _brush.Display = false;
+            Brush.Display = false;
         }
     }
 
@@ -573,6 +611,16 @@ public class FTBrush
         set { _seed = Mathf.Max(value, 0); }
     }
 
+    public float Radius
+    {
+        get { return Size / 2; }
+    }
+
+    public Vector3 InvertNormal
+    {
+        get { return Normal * -1; }
+    }
+
     private float BrushArea
     {
         get { return Mathf.PI * Mathf.Pow(((Size) / 2), 2); }
@@ -581,9 +629,9 @@ public class FTBrush
     public void DrawCircles(FTBrushPreset colorPreset)
     {
         Handles.color = colorPreset.InnerColor;
-        Handles.DrawSolidDisc(Position, Normal, Size / 2);
+        Handles.DrawSolidDisc(Position, Normal, Radius);
         Handles.color = colorPreset.OuterColor;
-        Handles.DrawWireDisc(Position, Normal, Size / 2);
+        Handles.DrawWireDisc(Position, Normal, Radius, 3f);
     }
 
     public void DrawPoints()
@@ -619,10 +667,10 @@ public class FTBrush
                 float randomX = Random.Range(-Disorder, Disorder);
                 float randomZ = Random.Range(-Disorder, Disorder);
 
-                Vector3 pointOffset = new Vector3((i * distance + randomX) - Size/2, 0f, (j * distance + randomZ) - Size / 2);
+                Vector3 pointOffset = new Vector3((i * distance + randomX) - Radius, 0f, (j * distance + randomZ) - Radius);
                 Vector3 point = Position + rotation * pointOffset;
 
-                if (Vector3.Distance(Position, point) <= Size / 2)
+                if (Vector3.Distance(Position, point) <= Radius)
                 {
                     points.Add(point);
                 }
