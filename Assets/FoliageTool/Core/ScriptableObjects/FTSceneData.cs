@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 [CreateAssetMenu(fileName = "FTSceneData", menuName = "Foliage/Scene data")]
 public class FTSceneData : ScriptableObject

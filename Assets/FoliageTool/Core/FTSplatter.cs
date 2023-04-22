@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class FTSplatter : MonoBehaviour
 {
@@ -89,6 +90,7 @@ public class FTSplatter : MonoBehaviour
             }   
         }
         EditorUtility.SetDirty(sceneManager.SceneData);
+        sceneManager.UpdateFoliage();
     }
 
     private Vector3 RandomPositionInCircle(Vector3 position, float radius)

@@ -52,7 +52,6 @@ public class FTSceneManager : MonoBehaviour
         {
             return;
         }
-
         for (int i = 0; i < SceneData.FoliageData.Count; i++)
         {
             if (SceneData.FoliageData[i] != null && _argsBuffers[i] != null)

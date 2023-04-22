@@ -93,6 +93,10 @@ Material:
         m_Texture: {fileID: 2800000, guid: 16de6b1c6b0ed9e4b97d52e1389296e0, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _RMO_map:
+        m_Texture: {fileID: 2800000, guid: 16de6b1c6b0ed9e4b97d52e1389296e0, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _base_color_map:
         m_Texture: {fileID: 2800000, guid: c11fd0981bea30846bf483c25abe9819, type: 3}
         m_Scale: {x: 1, y: 1}
@@ -112,6 +116,7 @@ Material:
     m_Ints: []
     m_Floats:
     - PROCEDURAL_INSTANCING: 1
+    - _Ambient_occlusion_intensity: 0.5
     - _BumpScale: 1
     - _CullingAngle: 180
     - _CullingDistance: 100

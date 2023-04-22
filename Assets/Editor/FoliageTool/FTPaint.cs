@@ -6,7 +6,6 @@ using System.Linq;
 using System.IO;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 
 public class FTPaint : EditorWindow
 {
@@ -128,22 +127,33 @@ public class FTPaint : EditorWindow
 
         GUILayout.Space(5);
 
-        EPaintMode newPaintMode = (EPaintMode)EditorGUILayout.EnumPopup("Mode", _paintMode, GUILayout.Height(30));
-        if (newPaintMode != _paintMode) { HandlePaintMode(newPaintMode); }
+        _paintMode = (EPaintMode)EditorGUILayout.EnumPopup("Mode", _paintMode, GUILayout.Height(30));
 
         #region BRUSH
         GUILayout.Label("Brush", FTStyles.Title);
         GUILayout.Space(5);
+
+        // Size parameter
         GUILayout.BeginHorizontal();
         GUILayout.Label("Brush size", FTStyles.Label, GUILayout.Width(150));
         _brush.Size = (float)GUILayout.HorizontalSlider(_brush.Size, 0.5f, 20f);
         GUILayout.Label(_brush.Size.ToString("F1"), GUILayout.Width(50));
         GUILayout.EndHorizontal();
         GUILayout.Space(5);
+
+        // Density parameter
         GUILayout.BeginHorizontal();
-        GUILayout.Label("Brush density", FTStyles.Label, GUILayout.Width(150));
-        _brush.Density = (float)GUILayout.HorizontalSlider(_brush.Density, 0f, 1f);
+        GUILayout.Label("Brush density (/m2)", FTStyles.Label, GUILayout.Width(150));
+        _brush.Density = (float)GUILayout.HorizontalSlider(_brush.Density, 0f, 20f);
         GUILayout.Label(_brush.Density.ToString("F2"), GUILayout.Width(50));
+        GUILayout.EndHorizontal();
+        GUILayout.Space(5);
+
+        // Disorder parameter
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("Brush disorder", FTStyles.Label, GUILayout.Width(150));
+        _brush.Disorder = (float)GUILayout.HorizontalSlider(_brush.Disorder, 0f, 2f);
+        GUILayout.Label(_brush.Disorder.ToString("F2"), GUILayout.Width(50));
         GUILayout.EndHorizontal();
         GUILayout.Space(5);
         #endregion
@@ -200,6 +210,11 @@ public class FTPaint : EditorWindow
                 switch (_paintMode)
                 {
                     case EPaintMode.Paint:
+                        if (current.shift)
+                        {
+                            Erase();
+                            return;
+                        }
                         Paint();
                         break;
                     case EPaintMode.Erase:
@@ -316,69 +331,61 @@ public class FTPaint : EditorWindow
     {
         FoliageType currentFoliageType = _foliageTypes[_selectedIndex];
 
-        for(float x = -_brush.Size; x< _brush.Size; x += 0.1f)
+        Vector3[] points = _brush.GetPoints();
+
+        // Pour chacun des points du brush on lance un rayon qui va tester les collisions
+        for (int i = 0; i < points.Length; i++)
         {
-            for (float z = -_brush.Size; z < _brush.Size; z += 0.1f)
+            RaycastHit hit;
+            Vector3 startRayPosition = points[i] + _brush.Normal * _brush.DebugLinePointSize;
+            Vector3 rayDirection = _brush.Normal * -1;
+            float rayDistance = _brush.DebugLinePointSize + 0.5f;
+
+            if (Physics.Raycast(startRayPosition, rayDirection, out hit, rayDistance, currentFoliageType.LayerMask))
             {
-                float densityValue = Mathf.PerlinNoise(_brush.Position.x * 1 + x, _brush.Position.z * 1 + z);
+                // Scale
+                Vector3 randomScale = FTUtils.RandomUniformVector3(minimum: currentFoliageType.MinimumScale, maximum: currentFoliageType.MaximumScale);
 
+                // Rotation
+                Quaternion finalRotation = Quaternion.identity;
+
+                if (currentFoliageType.AlignToNormal)
+                {
+                    finalRotation = Quaternion.FromToRotation(Vector3.up, hit.normal);
+                }
+                if (currentFoliageType.RandomRotation)
+                {
+                    Quaternion yRotation = Quaternion.AngleAxis(Random.Range(0, 360), Vector3.up);
+                    finalRotation *= yRotation;
+                }
+
+                // Position
+                Vector3 position = hit.point;
+                FoliageData foliageData = SceneManager.SceneData.GetFoliageDataFromId(currentFoliageType.GetID);
+
+                if (foliageData == null)
+                {
+                    // Create a new foliage Data and add it to data container
+                    FoliageData newFoliageData = new FoliageData(
+                        id: currentFoliageType.GetID,
+                        mesh: currentFoliageType.Mesh,
+                        material: currentFoliageType.Material,
+                        renderShadows: currentFoliageType.RenderShadows,
+                        receiveShadows: currentFoliageType.ReceiveShadows
+                        );
+                    SceneManager.SceneData.FoliageData.Add(newFoliageData);
+                    foliageData = newFoliageData;
+                }
+
+                Matrix4x4 matrice = Matrix4x4.TRS(position, finalRotation, randomScale);
+                foliageData.Matrice.Add(matrice);
             }
+
+            // Update visualisation
+            SceneManager.UpdateFoliage();
+
+            EditorUtility.SetDirty(SceneManager.SceneData);
         }
-
-        #region Calculate position
-        Vector3 perpendicularDirection = Vector3.Cross(_brush.Normal, _brush.RayDirection);
-
-        if (perpendicularDirection == Vector3.zero)
-        {
-            perpendicularDirection = Vector3.Cross(_brush.Normal, Vector3.up);
-        }
-
-        float randomAngle = Random.Range(0f, Mathf.PI * 2f); // Angle aléatoire
-        Vector3 offset = Quaternion.AngleAxis(randomAngle * Mathf.Rad2Deg, _brush.Normal) * perpendicularDirection.normalized * Random.Range(0, _brush.Size); // Position relative de l'impact par rapport au centre
-        Vector3 spawnPosition = _brush.Position + offset;
-        #endregion
-
-        #region Calcul scale
-        Vector3 randomScale = FTUtils.RandomUniformVector3(minimum: currentFoliageType.MinimumScale, maximum: currentFoliageType.MaximumScale);
-        #endregion
-
-        #region Calcul rotation
-        Quaternion finalRotation = Quaternion.identity;
-
-        if (currentFoliageType.AlignToNormal)
-        {
-            finalRotation = Quaternion.FromToRotation(Vector3.up, _brush.Normal);
-        }
-        if (currentFoliageType.RandomRotation)
-        {
-            Quaternion yRotation = Quaternion.AngleAxis(Random.Range(0, 360), Vector3.up);
-            finalRotation *= yRotation;
-        }
-        #endregion
-
-        FoliageData foliageData = SceneManager.SceneData.GetFoliageDataFromId(currentFoliageType.GetID);
-
-        if (foliageData == null)
-        {
-            // Create a new foliage Data and add it to data container
-            FoliageData newFoliageData = new FoliageData(
-                id: currentFoliageType.GetID,
-                mesh: currentFoliageType.Mesh,
-                material: currentFoliageType.Material,
-                renderShadows: currentFoliageType.RenderShadows,
-                receiveShadows: currentFoliageType.ReceiveShadows
-                );
-            SceneManager.SceneData.FoliageData.Add(newFoliageData);
-            foliageData = newFoliageData;
-        }
-
-        Matrix4x4 matrice = Matrix4x4.TRS(spawnPosition, finalRotation, randomScale);
-        foliageData.Matrice.Add(matrice);
-
-        // Update visualisation
-        SceneManager.UpdateFoliage();
-
-        EditorUtility.SetDirty(SceneManager.SceneData);
     }
 
     private void Erase()
@@ -387,14 +394,13 @@ public class FTPaint : EditorWindow
 
         for (int i = 0; i < foliageToRemove.Matrice.Count; i++)
         {
-            if (Vector3.Distance(_brush.Position, foliageToRemove.Position(i)) < _brush.Size)
+            if (Vector3.Distance(_brush.Position, foliageToRemove.Position(i)) < _brush.Size/2)
             {
                 foliageToRemove.Matrice.RemoveAt(i);
-                SceneManager.UpdateFoliage();
-                EditorUtility.SetDirty(SceneManager.SceneData);
             }
         }
-
+        SceneManager.UpdateFoliage();
+        EditorUtility.SetDirty(SceneManager.SceneData);
     }
 
     private void DrawBrush()
@@ -404,16 +410,25 @@ public class FTPaint : EditorWindow
 
         if (Physics.Raycast(ray, out hit, Mathf.Infinity))
         {
+            _brush.Display = true;
             _brush.Position = hit.point;
             _brush.Normal = hit.normal.normalized;
-            _brush.RayDirection = ray.direction;
 
-            Handles.color = _brush.Preset.InnerColor;
-            Handles.DrawSolidDisc(_brush.Position, _brush.Normal, _brush.Size);
-            Handles.color = _brush.Preset.OuterColor;
-            Handles.DrawWireDisc(_brush.Position, _brush.Normal, _brush.Size);
-            
-            _brush.Display = true;
+            switch (_paintMode)
+            {
+                case EPaintMode.None:
+                    _brush.Display = false;
+                    return;
+                case EPaintMode.Paint:
+                    _brush.DrawCircles(colorPreset: _brush.PaintPreset);
+                    _brush.DrawPoints();
+                    break;
+                case EPaintMode.Erase:
+                    _brush.DrawCircles(colorPreset: _brush.ErasePreset);
+                    break;
+                default: 
+                    break;
+            }
         }
         else
         {
@@ -428,22 +443,6 @@ public class FTPaint : EditorWindow
         {
             string assetPath = AssetDatabase.GUIDToAssetPath(guid);
             _foliageTypes.Add(AssetDatabase.LoadAssetAtPath<FoliageType>(assetPath));
-        }
-    }
-
-    // On paint mode change
-    private void HandlePaintMode(EPaintMode newPaintMode)
-    {
-        _paintMode = newPaintMode;
-        switch (_paintMode)
-        {
-            case EPaintMode.Paint:
-                _brush.Preset = _brush.PaintPreset;
-                break;
-            case EPaintMode.Erase:
-                _brush.Preset = _brush.ErasePreset;
-                break;
-            default: break;
         }
     }
 
@@ -504,15 +503,19 @@ public class FTBrush
 {
     public Vector3 Position;
     public Vector3 Normal;
-    public Vector3 RayDirection;
-    public float Size = 1f;
+    public float Size = 1f; // Diameter
     public float Density = 1f;
     public bool Display = false;
+    public int Seed = 56785;
+    public float Disorder = 0;
 
     public FTBrushPreset Preset;
 
+    [Header("Debug")]
+    public float DebugLinePointSize = 0.3f;
+
     public readonly FTBrushPreset PaintPreset;
-    public readonly FTBrushPreset ErasePreset; 
+    public readonly FTBrushPreset ErasePreset;
 
     // Constructor
     public FTBrush()
@@ -520,6 +523,72 @@ public class FTBrush
         PaintPreset = new FTBrushPreset(innerColor: new Color(0.27f, 0.38f, 0.49f, 0.25f), outerColor: new Color(0.27f, 0.38f, 0.49f, 1));
         ErasePreset = new FTBrushPreset(innerColor: new Color(1f, 0f, 0f, 0.25f), outerColor: new Color(1f, 0f, 0f, 1));
         Preset = PaintPreset;
+    }
+
+    public void DrawCircles(FTBrushPreset colorPreset)
+    {
+        Handles.color = colorPreset.InnerColor;
+        Handles.DrawSolidDisc(Position, Normal, Size / 2);
+        Handles.color = colorPreset.OuterColor;
+        Handles.DrawWireDisc(Position, Normal, Size / 2);
+    }
+
+    public void DrawPoints()
+    {
+        Vector3[] paintPoints = GetPoints();
+        for (int i = 0; i < paintPoints.Length; i++)
+        {
+            Handles.DrawLine(paintPoints[i], paintPoints[i] + Normal * DebugLinePointSize, 3f);
+        }
+    }
+
+    public Vector3[] GetPoints()
+    {
+        // Initialize the seed
+        Random.InitState(Seed);
+
+        List<Vector3> points = new List<Vector3>();
+
+        // Calculate the number of rows and columns
+        int numRows = Mathf.CeilToInt(Mathf.Sqrt(BrushArea() * Density));
+
+        // Calculate the distance between each points
+        float distance = (Size) / numRows;
+
+        Quaternion rotation = Quaternion.FromToRotation(Vector3.up, Normal);
+
+        // Create a grid of points in the brush area based on density per square metter, radius and disorder parameters
+        for (int i = 0; i < numRows; i++)
+        {
+            for (int j = 0; j < numRows; j++)
+            {
+                // Randomize offset from disorder parameter
+                float randomX = Random.Range(-Disorder, Disorder);
+                float randomZ = Random.Range(-Disorder, Disorder);
+
+                Vector3 pointOffset = new Vector3((i * distance + randomX) - Size/2, 0f, (j * distance + randomZ) - Size / 2);
+                Vector3 point = Position + rotation * pointOffset;
+
+                if (Vector3.Distance(Position, point) <= Size / 2)
+                {
+                    points.Add(point);
+                }
+            }
+        }
+
+        // If point list is empty then add a point by default at brush position
+        if (points.Count == 0)
+        {
+            points.Add(Position);
+        }
+
+        // Return the array of all points
+        return points.ToArray();
+    }
+
+    private float BrushArea()
+    {
+        return Mathf.PI * Mathf.Pow(((Size) / 2), 2);
     }
 
     public class FTBrushPreset
@@ -532,13 +601,5 @@ public class FTBrush
             InnerColor = innerColor;
             OuterColor = outerColor;
         }
-    }
-}
-
-public class CustomToggle: Toggle
-{
-    public CustomToggle(bool value, GUIContent content, GUIStyle style)
-    {
-
     }
 }
