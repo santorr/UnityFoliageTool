@@ -136,7 +136,7 @@ public class FTPaint : EditorWindow
         // Size parameter
         GUILayout.BeginHorizontal();
         GUILayout.Label("Brush size", FTStyles.Label, GUILayout.Width(150));
-        _brush.Size = (float)GUILayout.HorizontalSlider(_brush.Size, 0.5f, 20f);
+        _brush.Size = (float)GUILayout.HorizontalSlider(_brush.Size, _brush.MinSize, _brush.MaxSize);
         GUILayout.Label(_brush.Size.ToString("F1"), GUILayout.Width(50));
         GUILayout.EndHorizontal();
         GUILayout.Space(5);
@@ -144,7 +144,7 @@ public class FTPaint : EditorWindow
         // Density parameter
         GUILayout.BeginHorizontal();
         GUILayout.Label("Brush density (/m2)", FTStyles.Label, GUILayout.Width(150));
-        _brush.Density = (float)GUILayout.HorizontalSlider(_brush.Density, 0f, 20f);
+        _brush.Density = (float)GUILayout.HorizontalSlider(_brush.Density, _brush.MinDensity, _brush.MaxDensity);
         GUILayout.Label(_brush.Density.ToString("F2"), GUILayout.Width(50));
         GUILayout.EndHorizontal();
         GUILayout.Space(5);
@@ -152,7 +152,7 @@ public class FTPaint : EditorWindow
         // Disorder parameter
         GUILayout.BeginHorizontal();
         GUILayout.Label("Brush disorder", FTStyles.Label, GUILayout.Width(150));
-        _brush.Disorder = (float)GUILayout.HorizontalSlider(_brush.Disorder, 0f, 2f);
+        _brush.Disorder = (float)GUILayout.HorizontalSlider(_brush.Disorder, _brush.MinDisorder, _brush.MaxDisorder);
         GUILayout.Label(_brush.Disorder.ToString("F2"), GUILayout.Width(50));
         GUILayout.EndHorizontal();
         GUILayout.Space(5);
@@ -202,6 +202,21 @@ public class FTPaint : EditorWindow
     {
         Event current = Event.current;
         int controlId = GUIUtility.GetControlID(GetHashCode(), FocusType.Passive);
+
+        if (current.type == EventType.ScrollWheel)
+        {
+            float delta = 0.5f;
+
+            if (current.delta.y > 0)
+            {
+                _brush.Size -= delta;
+            }
+            else
+            {
+                _brush.Size += delta;
+            }
+            
+        }
 
         if ((current.type == EventType.MouseDrag || current.type == EventType.MouseDown) && !current.alt)
         {
@@ -501,28 +516,66 @@ public class FTPaint : EditorWindow
 
 public class FTBrush
 {
+    public bool Display = false;
     public Vector3 Position;
     public Vector3 Normal;
-    public float Size = 1f; // Diameter
-    public float Density = 1f;
-    public bool Display = false;
-    public int Seed = 56785;
-    public float Disorder = 0;
 
-    public FTBrushPreset Preset;
+    // Size
+    private float _size = 2f;
+    public float MinSize { get; private set; } = 0.5f;
+    public float MaxSize { get; private set; } = 10f;
 
-    [Header("Debug")]
-    public float DebugLinePointSize = 0.3f;
+    // Density per square meter
+    private float _density = 5f;
+    public float MinDensity { get; private set; } = 0f;
+    public float MaxDensity { get; private set; } = 20f;
+
+    // Disorder to create some random
+    private float _disorder = 0;
+    public float MinDisorder { get; private set; } = 0f;
+    public float MaxDisorder { get; private set; } = 2f;
+
+    // Seed
+    private int _seed = 56785;
+
+    public float DebugLinePointSize { get; private set; } = 0.3f;
 
     public readonly FTBrushPreset PaintPreset;
     public readonly FTBrushPreset ErasePreset;
 
-    // Constructor
     public FTBrush()
     {
         PaintPreset = new FTBrushPreset(innerColor: new Color(0.27f, 0.38f, 0.49f, 0.25f), outerColor: new Color(0.27f, 0.38f, 0.49f, 1));
         ErasePreset = new FTBrushPreset(innerColor: new Color(1f, 0f, 0f, 0.25f), outerColor: new Color(1f, 0f, 0f, 1));
-        Preset = PaintPreset;
+    }
+
+    public float Size
+    {
+        get { return _size; }
+        set { _size = Mathf.Clamp(value, MinSize, MaxSize); }
+    }
+
+    public float Density
+    {
+        get { return _density; }
+        set { _density = Mathf.Clamp(value, MinDensity, MaxDensity); }
+    }
+
+    public float Disorder
+    {
+        get { return _disorder; }
+        set { _disorder = Mathf.Clamp(value, MinDisorder, MaxDisorder); }
+    }
+
+    public int Seed
+    {
+        get { return _seed; }
+        set { _seed = Mathf.Max(value, 0); }
+    }
+
+    private float BrushArea
+    {
+        get { return Mathf.PI * Mathf.Pow(((Size) / 2), 2); }
     }
 
     public void DrawCircles(FTBrushPreset colorPreset)
@@ -550,7 +603,7 @@ public class FTBrush
         List<Vector3> points = new List<Vector3>();
 
         // Calculate the number of rows and columns
-        int numRows = Mathf.CeilToInt(Mathf.Sqrt(BrushArea() * Density));
+        int numRows = Mathf.CeilToInt(Mathf.Sqrt(BrushArea * Density));
 
         // Calculate the distance between each points
         float distance = (Size) / numRows;
@@ -584,11 +637,6 @@ public class FTBrush
 
         // Return the array of all points
         return points.ToArray();
-    }
-
-    private float BrushArea()
-    {
-        return Mathf.PI * Mathf.Pow(((Size) / 2), 2);
     }
 
     public class FTBrushPreset
