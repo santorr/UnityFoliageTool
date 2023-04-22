@@ -77,8 +77,17 @@ public class FTPaint : EditorWindow
     {
         SceneView.duringSceneGui -= this.OnSceneGUI;
         SceneView.duringSceneGui += this.OnSceneGUI;
-
         RefreshFoliageTypes();
+    }
+
+    protected void OnEnable()
+    {
+        LoadParameters();
+    }
+
+    protected void OnDisable()
+    {
+        SaveParameters();
     }
 
     // Exit tab
@@ -135,7 +144,7 @@ public class FTPaint : EditorWindow
 
         // Size parameter
         GUILayout.BeginHorizontal();
-        GUILayout.Label("Brush size", FTStyles.Label, GUILayout.Width(150));
+        GUILayout.Label(new GUIContent("Brush size", "Shift + Scroll wheel"), FTStyles.Label, GUILayout.Width(150));
         Brush.Size = (float)GUILayout.HorizontalSlider(Brush.Size, Brush.MinSize, Brush.MaxSize);
         GUILayout.Label(Brush.Size.ToString("F1"), GUILayout.Width(50));
         GUILayout.EndHorizontal();
@@ -143,7 +152,7 @@ public class FTPaint : EditorWindow
 
         // Density parameter
         GUILayout.BeginHorizontal();
-        GUILayout.Label("Brush density (/m2)", FTStyles.Label, GUILayout.Width(150));
+        GUILayout.Label(new GUIContent("Brush density (/m2)", "Ctrl + Scroll ctrl"), FTStyles.Label, GUILayout.Width(150));
         Brush.Density = (float)GUILayout.HorizontalSlider(Brush.Density, Brush.MinDensity, Brush.MaxDensity);
         GUILayout.Label(Brush.Density.ToString("F2"), GUILayout.Width(50));
         GUILayout.EndHorizontal();
@@ -151,7 +160,7 @@ public class FTPaint : EditorWindow
 
         // Disorder parameter
         GUILayout.BeginHorizontal();
-        GUILayout.Label("Brush disorder", FTStyles.Label, GUILayout.Width(150));
+        GUILayout.Label(new GUIContent("Brush disorder", "Alt + Scroll ctrl"), FTStyles.Label, GUILayout.Width(150));
         Brush.Disorder = (float)GUILayout.HorizontalSlider(Brush.Disorder, Brush.MinDisorder, Brush.MaxDisorder);
         GUILayout.Label(Brush.Disorder.ToString("F2"), GUILayout.Width(50));
         GUILayout.EndHorizontal();
@@ -549,6 +558,49 @@ public class FTPaint : EditorWindow
         AssetDatabase.SaveAssets();
 
         return asset;
+    }
+
+    private void SaveParameters()
+    {
+        // Save brush size
+        EditorPrefs.SetFloat("BrushSize", Brush.Size);
+
+        // Save brush density
+        EditorPrefs.SetFloat("BrushDensity", Brush.Density);
+
+        // Save brush disorder
+        EditorPrefs.SetFloat("BrushDisorder", Brush.Disorder);
+    }
+
+    private void LoadParameters()
+    {
+        // Load brush size
+        if (EditorPrefs.HasKey("BrushSize"))
+        {
+            Brush.Size = EditorPrefs.GetFloat("BrushSize");
+        }
+        else
+        {
+            EditorPrefs.SetFloat("BrushSize", Brush.Size);
+        }
+        // Load brush density
+        if (EditorPrefs.HasKey("BrushDensity"))
+        {
+            Brush.Density = EditorPrefs.GetFloat("BrushDensity");
+        }
+        else
+        {
+            EditorPrefs.SetFloat("BrushDensity", Brush.Density);
+        }
+        // Load brush disorder
+        if (EditorPrefs.HasKey("BrushDisorder"))
+        {
+            Brush.Disorder = EditorPrefs.GetFloat("BrushDisorder");
+        }
+        else
+        {
+            EditorPrefs.SetFloat("BrushDisorder", Brush.Disorder);
+        }
     }
 }
 
