@@ -51,7 +51,7 @@ public class FTPaint : EditorWindow
     }
 
     // Paint enum
-    enum EPaintMode
+    public enum EPaintMode
     {
         None,
         Paint,
@@ -59,14 +59,27 @@ public class FTPaint : EditorWindow
     }
 
     public readonly FTBrush Brush = new FTBrush();
-    float _paintFrequency = 0.15f;
-    bool _canPaint = true;
+    public float PaintFrequency { get; private set; } = 0.15f;
+    public bool CanPaint { get; private set; } = true;
+    public int SelectedIndex { get; private set; }
+    public FoliageType[] FoliageTypes { get; private set; }
+    public EPaintMode PaintMode { get; private set; }
+    public Vector2 FoliageTypesScrollPosition { get; private set; }
+    public Vector2 ParametersScrollPosition { get; private set; }
+
     FTSceneManager _sceneManager;
-    EPaintMode _paintMode;
-    int _selectedIndex;
-    List<FoliageType> _foliageTypes = new List<FoliageType>();
-    Vector2 _foliageTypesSectionScrollPosition;
-    Vector2 _parametersSectionScrollPosition;
+    private FTSceneManager SceneManager
+    {
+        get
+        {
+            if (_sceneManager == null)
+            {
+                _sceneManager = FindAnyObjectByType<FTSceneManager>();
+                return _sceneManager;
+            }
+            return _sceneManager;
+        }
+    }
 
     // Create the window
     [MenuItem("Tools/FT Paint")]
@@ -83,19 +96,14 @@ public class FTPaint : EditorWindow
         RefreshFoliageTypes();
     }
 
-    protected void OnEnable()
+    private void OnEnable()
     {
         LoadParameters();
     }
 
-    protected void OnDisable()
+    private void OnDisable()
     {
         SaveParameters();
-    }
-
-    // Exit tab
-    private void OnDestroy()
-    {
         SceneView.duringSceneGui -= this.OnSceneGUI;
     }
 
@@ -139,7 +147,7 @@ public class FTPaint : EditorWindow
 
         GUILayout.Space(5);
 
-        _paintMode = (EPaintMode)EditorGUILayout.EnumPopup("Mode", _paintMode, GUILayout.Height(30));
+        PaintMode = (EPaintMode)EditorGUILayout.EnumPopup("Mode", PaintMode, GUILayout.Height(30));
 
         #region BRUSH
         GUILayout.Label("Brush", FTStyles.Title);
@@ -174,17 +182,17 @@ public class FTPaint : EditorWindow
         int numberColumn = 2;
         GUILayout.Label("Foliage types", FTStyles.Title);
         GUILayout.Space(5);
-        _foliageTypesSectionScrollPosition = GUILayout.BeginScrollView(_foliageTypesSectionScrollPosition, GUILayout.Height(200));
+        FoliageTypesScrollPosition = GUILayout.BeginScrollView(FoliageTypesScrollPosition, GUILayout.Height(200));
 
         List<GUIContent> foliageTypesGUI = new List<GUIContent>();
-        foreach (FoliageType foliageType in _foliageTypes)
+        foreach (FoliageType foliageType in FoliageTypes)
         {
             Texture2D texture = AssetPreview.GetMiniThumbnail(foliageType);
             string name = foliageType.name;
 
             foliageTypesGUI.Add(new GUIContent(name, texture, "Foliage type"));
         }
-        _selectedIndex = GUILayout.SelectionGrid(_selectedIndex, foliageTypesGUI.ToArray(), numberColumn, GUILayout.Height(50));
+        SelectedIndex = GUILayout.SelectionGrid(SelectedIndex, foliageTypesGUI.ToArray(), numberColumn, GUILayout.Height(50));
 
         GUILayout.EndScrollView();
         #endregion
@@ -195,7 +203,7 @@ public class FTPaint : EditorWindow
     // While tab is open
     private void OnSceneGUI(SceneView sceneView)
     {
-        if (_paintMode == EPaintMode.None)
+        if (PaintMode == EPaintMode.None)
         {
             Brush.Display = false;
             return;
@@ -269,29 +277,24 @@ public class FTPaint : EditorWindow
             Repaint();
         }
 
-        if ((e.type == EventType.MouseDrag || e.type == EventType.MouseDown) && !e.alt)
+
+        if (e.shift)
         {
-            if (e.button == 0)
+            PaintMode = EPaintMode.Erase;
+            if ((e.type == EventType.MouseDrag || e.type == EventType.MouseDown) && !e.alt && e.button == 0)
             {
-                switch (_paintMode)
+                Erase();
+            }
+        }
+        else if (!e.shift)
+        {
+            PaintMode = EPaintMode.Paint;
+            if ((e.type == EventType.MouseDrag || e.type == EventType.MouseDown) && !e.alt && e.button == 0)
+            {
+                if (CanPaint)
                 {
-                    case EPaintMode.Paint:
-                        if (e.shift)
-                        {
-                            Erase();
-                            return;
-                        }
-                        if (_canPaint)
-                        {
-                            Paint();
-                            PaintDelayAsync();
-                        }
-                        break;
-                    case EPaintMode.Erase:
-                        Erase();
-                        break;
-                    default:
-                        break;
+                    Paint();
+                    PaintDelayAsync();
                 }
             }
         }
@@ -312,7 +315,7 @@ public class FTPaint : EditorWindow
             return;
         }
 
-        _parametersSectionScrollPosition = GUILayout.BeginScrollView(_parametersSectionScrollPosition);
+        ParametersScrollPosition = GUILayout.BeginScrollView(ParametersScrollPosition);
 
         #region Mesh area
         GUILayout.Label("Mesh", FTStyles.Title);
@@ -455,6 +458,7 @@ public class FTPaint : EditorWindow
         }
     }
 
+    // Find the SelectedFoliageType from his ID in the FoliageData and loop over all matrix to compare distance from brush center, remove them if distance is less than radius
     private void Erase()
     {
         FoliageData foliageToRemove = SceneManager.SceneData.GetFoliageDataFromId(SelectedFoliageType.GetID);
@@ -470,18 +474,19 @@ public class FTPaint : EditorWindow
         EditorUtility.SetDirty(SceneManager.SceneData);
     }
 
+    // Draw the brush in the scene depending on _paintMode and SelectedFoliageType LayerMask
     private void DrawBrush()
     {
         Ray ray = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
         RaycastHit hit;
 
-        if (Physics.Raycast(ray, out hit, Mathf.Infinity))
+        if (Physics.Raycast(ray, out hit, Mathf.Infinity, SelectedFoliageType.LayerMask))
         {
             Brush.Display = true;
             Brush.Position = hit.point;
             Brush.Normal = hit.normal.normalized;
 
-            switch (_paintMode)
+            switch (PaintMode)
             {
                 case EPaintMode.None:
                     Brush.Display = false;
@@ -503,42 +508,41 @@ public class FTPaint : EditorWindow
         }
     }
 
+    // Get all FoliageType from the project and fill the _foliageTypes with FoliageType assets
     private void RefreshFoliageTypes()
     {
-        _foliageTypes.Clear();
-        foreach (string guid in AssetDatabase.FindAssets($"t: {typeof(FoliageType)}"))
+        string[] projectFoliageTypesGuid = AssetDatabase.FindAssets($"t: {typeof(FoliageType)}");
+
+        FoliageTypes = new FoliageType[projectFoliageTypesGuid.Length];
+
+        for (int i=0; i< projectFoliageTypesGuid.Length; i++)
         {
-            string assetPath = AssetDatabase.GUIDToAssetPath(guid);
-            _foliageTypes.Add(AssetDatabase.LoadAssetAtPath<FoliageType>(assetPath));
+            string assetPath = AssetDatabase.GUIDToAssetPath(projectFoliageTypesGuid[i]);
+            FoliageTypes[i] = AssetDatabase.LoadAssetAtPath<FoliageType>(assetPath);
         }
     }
 
+    // Get the selected foliage, return null if not valid
     private FoliageType SelectedFoliageType
     {
-        get { return _foliageTypes[_selectedIndex];}
-    }
-
-    // Get the foliage scene manager, if doesn't exist create a new one in the current scene
-    private FTSceneManager SceneManager
-    {
-        get
+        get 
         {
-            if (_sceneManager == null) 
-            { 
-                _sceneManager = FindAnyObjectByType<FTSceneManager>();
-                return _sceneManager;
+            if (FoliageTypes.Length >= SelectedIndex)
+            {
+                return FoliageTypes[SelectedIndex];
             }
-            return _sceneManager;
+            return null;
         }
     }
 
-    // Create a new scene manager and return it
+    // Create and return a FTSceneManager in the current scene that is able to store a FTSceneManager and display data
     private FTSceneManager CreateSceneManager()
     {
         GameObject FTManagerObject = new GameObject("FT_Manager");
         return FTManagerObject.AddComponent<FTSceneManager>();
     }
 
+    // Create and return a FTSceneData asset at scene content location that contains all scene foliage data
     private FTSceneData CreateSceneData()
     {
         string sceneDirectory;
@@ -570,13 +574,15 @@ public class FTPaint : EditorWindow
         return asset;
     }
 
+    // Create timer between each paint
     async void PaintDelayAsync()
     {
-        _canPaint = false;
-        await Task.Delay((int)(_paintFrequency * 1000));
-        _canPaint = true;
+        CanPaint = false;
+        await Task.Delay((int)(PaintFrequency * 1000));
+        CanPaint = true;
     }
 
+    // Save parameters on disable tool
     private void SaveParameters()
     {
         // Save brush size
@@ -589,6 +595,7 @@ public class FTPaint : EditorWindow
         EditorPrefs.SetFloat("BrushDisorder", Brush.Disorder);
     }
 
+    // Load parameters on enable tool
     private void LoadParameters()
     {
         // Load brush size
@@ -642,9 +649,6 @@ public class FTBrush
     public float MinDisorder { get; private set; } = 0f;
     public float MaxDisorder { get; private set; } = 2f;
 
-    // Seed
-    private int _seed = 56785;
-
     public float DebugLinePointSize { get; private set; } = 0.3f;
 
     public readonly FTBrushPreset PaintPreset;
@@ -672,12 +676,6 @@ public class FTBrush
     {
         get { return _disorder; }
         set { _disorder = Mathf.Clamp(value, MinDisorder, MaxDisorder); }
-    }
-
-    public int Seed
-    {
-        get { return _seed; }
-        set { _seed = Mathf.Max(value, 0); }
     }
 
     public float Radius
@@ -712,21 +710,47 @@ public class FTBrush
         }
     }
 
-    public Vector3[] GetPoints()
+    private Vector3[] SunflowerAlgorythm()
     {
-        // Initialize the seed
-        Random.InitState(Seed);
-
-        List<Vector3> points = new List<Vector3>();
-
-        // Calculate the number of rows and columns
-        int numRows = Mathf.CeilToInt(Mathf.Sqrt(BrushArea * Density));
-
-        // Calculate the distance between each points
-        float distance = (Size) / numRows;
-
         Quaternion rotation = Quaternion.FromToRotation(Vector3.up, Normal);
 
+        int pointNumbers = (int)(BrushArea * Density);
+        Vector3[] points = new Vector3[pointNumbers];
+
+        float alpha = 2f;
+        int b = Mathf.RoundToInt(alpha * Mathf.Sqrt(pointNumbers));
+        float phi = (Mathf.Sqrt(5f) + 1f) / 2f;
+
+        for (int i = 0; i < pointNumbers; i++)
+        {
+            float randomX = Random.Range(-Disorder, Disorder);
+            float randomZ = Random.Range(-Disorder, Disorder);
+
+            float r = SunFlowerRadius(i, pointNumbers, b);
+            float theta = 2f * Mathf.PI * i / Mathf.Pow(phi, 2f);
+            Vector3 pointOffset = new Vector3(r * Mathf.Cos(theta) + randomX, 0f, r * Mathf.Sin(theta) + randomZ) * Radius;
+
+            Vector3 point = Position + rotation * pointOffset;
+            points[i] = point;
+        }
+
+        if (points.Length <= 1)
+        {
+            points = new Vector3[1];
+            points[0] = Position;
+        }
+
+        return points;
+    }
+
+    private Vector3[] GridAlgorythm()
+    {
+        List<Vector3> points = new List<Vector3>();
+        // Calculate the number of rows and columns
+        int numRows = Mathf.CeilToInt(Mathf.Sqrt(BrushArea * Density));
+        // Calculate the distance between each points
+        float distance = (Size) / numRows;
+        Quaternion rotation = Quaternion.FromToRotation(Vector3.up, Normal);
         // Create a grid of points in the brush area based on density per square metter, radius and disorder parameters
         for (int i = 0; i < numRows; i++)
         {
@@ -746,7 +770,6 @@ public class FTBrush
             }
         }
 
-        // If point list is empty then add a point by default at brush position
         if (points.Count == 0)
         {
             points.Add(Position);
@@ -754,6 +777,24 @@ public class FTBrush
 
         // Return the array of all points
         return points.ToArray();
+    }
+
+    private float SunFlowerRadius(int pointIndex, int pointNumbers, int b)
+    {
+        if (pointIndex > pointNumbers - b)
+        {
+            return 1f;
+        }
+        else
+        {
+            return Mathf.Sqrt(pointIndex - 0.5f) / Mathf.Sqrt(pointNumbers - (b + 0.5f));
+        }
+    }
+
+    public Vector3[] GetPoints()
+    {
+        return SunflowerAlgorythm();
+        // return GridAlgorythm();
     }
 
     public class FTBrushPreset
