@@ -654,45 +654,53 @@ public class FTBrush
     public readonly FTBrushPreset PaintPreset;
     public readonly FTBrushPreset ErasePreset;
 
+    // Constructor
     public FTBrush()
     {
         PaintPreset = new FTBrushPreset(innerColor: new Color(0.27f, 0.38f, 0.49f, 0.25f), outerColor: new Color(0.27f, 0.38f, 0.49f, 1));
         ErasePreset = new FTBrushPreset(innerColor: new Color(1f, 0f, 0f, 0.25f), outerColor: new Color(1f, 0f, 0f, 1));
     }
 
+    // Getter | Setter : Size
     public float Size
     {
         get { return _size; }
         set { _size = Mathf.Clamp(value, MinSize, MaxSize); }
     }
 
+    // Getter | Setter : Density
     public float Density
     {
         get { return _density; }
         set { _density = Mathf.Clamp(value, MinDensity, MaxDensity); }
     }
 
+    // Getter | Setter : Disorder
     public float Disorder
     {
         get { return _disorder; }
         set { _disorder = Mathf.Clamp(value, MinDisorder, MaxDisorder); }
     }
 
+    // Getter | Setter : Radius
     public float Radius
     {
         get { return Size / 2; }
     }
 
+    // Getter | Setter : InvertNormal (Raydirection)
     public Vector3 InvertNormal
     {
         get { return Normal * -1; }
     }
 
+    // Getter | Setter : BrushArea
     private float BrushArea
     {
         get { return Mathf.PI * Mathf.Pow(((Size) / 2), 2); }
     }
 
+    // Draw a circle at brush position based on color preset and radius
     public void DrawCircles(FTBrushPreset colorPreset)
     {
         Handles.color = colorPreset.InnerColor;
@@ -701,6 +709,7 @@ public class FTBrush
         Handles.DrawWireDisc(Position, Normal, Radius, 3f);
     }
 
+    // Draw lines to represent spawn points for foliage types
     public void DrawPoints()
     {
         Vector3[] paintPoints = GetPoints();
@@ -710,6 +719,7 @@ public class FTBrush
         }
     }
 
+    // A sunflower algorythm to draw lines for foliage types spawning
     private Vector3[] SunflowerAlgorythm()
     {
         Quaternion rotation = Quaternion.FromToRotation(Vector3.up, Normal);
@@ -743,6 +753,7 @@ public class FTBrush
         return points;
     }
 
+    // A grid algorythm to draw lines for foliage types spawning
     private Vector3[] GridAlgorythm()
     {
         List<Vector3> points = new List<Vector3>();
