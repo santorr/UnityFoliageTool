@@ -6,6 +6,7 @@ using System.Linq;
 using System.IO;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
+using System.Threading.Tasks;
 
 public class FTPaint : EditorWindow
 {
@@ -58,6 +59,8 @@ public class FTPaint : EditorWindow
     }
 
     public readonly FTBrush Brush = new FTBrush();
+    float _paintFrequency = 0.15f;
+    bool _canPaint = true;
     FTSceneManager _sceneManager;
     EPaintMode _paintMode;
     int _selectedIndex;
@@ -278,7 +281,11 @@ public class FTPaint : EditorWindow
                             Erase();
                             return;
                         }
-                        Paint();
+                        if (_canPaint)
+                        {
+                            Paint();
+                            PaintDelayAsync();
+                        }
                         break;
                     case EPaintMode.Erase:
                         Erase();
@@ -300,7 +307,7 @@ public class FTPaint : EditorWindow
     private void GUISelectedFoliageProperties()
     {
         // If no foliage type selected, don't draw properties
-        if (_foliageTypes[_selectedIndex] == null)
+        if (SelectedFoliageType == null)
         {
             return;
         }
@@ -312,12 +319,12 @@ public class FTPaint : EditorWindow
         GUILayout.Space(5);
         GUILayout.BeginHorizontal();
         GUILayout.Label("Mesh", FTStyles.Label, GUILayout.Width(150));
-        _foliageTypes[_selectedIndex].Mesh = (Mesh)EditorGUILayout.ObjectField(_foliageTypes[_selectedIndex].Mesh, typeof(Mesh), false);
+        SelectedFoliageType.Mesh = (Mesh)EditorGUILayout.ObjectField(SelectedFoliageType.Mesh, typeof(Mesh), false);
         GUILayout.EndHorizontal();
         GUILayout.Space(5);
         GUILayout.BeginHorizontal();
         GUILayout.Label("Material", FTStyles.Label, GUILayout.Width(150));
-        _foliageTypes[_selectedIndex].Material = (Material)EditorGUILayout.ObjectField(_foliageTypes[_selectedIndex].Material, typeof(Material), false);
+        SelectedFoliageType.Material = (Material)EditorGUILayout.ObjectField(SelectedFoliageType.Material, typeof(Material), false);
         GUILayout.EndHorizontal();
         #endregion
         GUILayout.Space(5);
@@ -327,24 +334,24 @@ public class FTPaint : EditorWindow
         // Splatter distance
         GUILayout.BeginHorizontal();
         GUILayout.Label("Splatter distance", FTStyles.Label, GUILayout.Width(150));
-        _foliageTypes[_selectedIndex].SplatterDistance = EditorGUILayout.FloatField(_foliageTypes[_selectedIndex].SplatterDistance);
+        SelectedFoliageType.SplatterDistance = EditorGUILayout.FloatField(SelectedFoliageType.SplatterDistance);
         GUILayout.EndHorizontal();
         GUILayout.Space(5);
         // Layer mask
         GUILayout.BeginHorizontal();
         GUILayout.Label("Layer mask", FTStyles.Label, GUILayout.Width(150));
-        int flags = _foliageTypes[_selectedIndex].LayerMask.value;
+        int flags = SelectedFoliageType.LayerMask.value;
         string[] options = Enumerable.Range(0, 32).Select(index => LayerMask.LayerToName(index)).Where(l => !string.IsNullOrEmpty(l)).ToArray();
-        _foliageTypes[_selectedIndex].LayerMask = EditorGUILayout.MaskField(flags, options);
+        SelectedFoliageType.LayerMask = EditorGUILayout.MaskField(flags, options);
         GUILayout.EndHorizontal();
         GUILayout.Space(5);
         // Random scale
         GUILayout.BeginHorizontal();
         GUILayout.Label("Random scale", FTStyles.Label, GUILayout.Width(150));
 
-        EditorGUILayout.LabelField("", _foliageTypes[_selectedIndex].MinimumScale.ToString("F1"), FTStyles.MinMaxLabel, GUILayout.Width(40));
-        EditorGUILayout.MinMaxSlider(ref _foliageTypes[_selectedIndex].MinimumScale, ref _foliageTypes[_selectedIndex].MaximumScale, 0, 10);
-        EditorGUILayout.LabelField("", _foliageTypes[_selectedIndex].MaximumScale.ToString("F1"), FTStyles.MinMaxLabel, GUILayout.Width(40));
+        EditorGUILayout.LabelField("", SelectedFoliageType.MinimumScale.ToString("F1"), FTStyles.MinMaxLabel, GUILayout.Width(40));
+        EditorGUILayout.MinMaxSlider(ref SelectedFoliageType.MinimumScale, ref SelectedFoliageType.MaximumScale, 0, 10);
+        EditorGUILayout.LabelField("", SelectedFoliageType.MaximumScale.ToString("F1"), FTStyles.MinMaxLabel, GUILayout.Width(40));
 
         GUILayout.EndHorizontal();
         #endregion
@@ -355,19 +362,19 @@ public class FTPaint : EditorWindow
         // Align to normal
         GUILayout.BeginHorizontal();
         GUILayout.Label("Align to normal", FTStyles.Label, GUILayout.Width(150));
-        _foliageTypes[_selectedIndex].AlignToNormal = EditorGUILayout.Toggle(_foliageTypes[_selectedIndex].AlignToNormal);
+        SelectedFoliageType.AlignToNormal = EditorGUILayout.Toggle(SelectedFoliageType.AlignToNormal);
         GUILayout.EndHorizontal();
         GUILayout.Space(5);
         // Random rotation
         GUILayout.BeginHorizontal();
         GUILayout.Label("Random rotation", FTStyles.Label, GUILayout.Width(150));
-        _foliageTypes[_selectedIndex].RandomRotation = EditorGUILayout.Toggle(_foliageTypes[_selectedIndex].RandomRotation);
+        SelectedFoliageType.RandomRotation = EditorGUILayout.Toggle(SelectedFoliageType.RandomRotation);
         GUILayout.EndHorizontal();
         GUILayout.Space(5);
         // Add offset
         GUILayout.BeginHorizontal();
         GUILayout.Label("Z offset", FTStyles.Label, GUILayout.Width(150));
-        _foliageTypes[_selectedIndex].Offset = EditorGUILayout.FloatField(_foliageTypes[_selectedIndex].Offset);
+        SelectedFoliageType.Offset = EditorGUILayout.FloatField(SelectedFoliageType.Offset);
         GUILayout.EndHorizontal();
         #endregion
         GUILayout.Space(5);
@@ -377,13 +384,13 @@ public class FTPaint : EditorWindow
         // Cast shadows
         GUILayout.BeginHorizontal();
         GUILayout.Label("Cast shadows", FTStyles.Label, GUILayout.Width(150));
-        _foliageTypes[_selectedIndex].RenderShadows = (ShadowCastingMode)EditorGUILayout.EnumFlagsField(_foliageTypes[_selectedIndex].RenderShadows);
+        SelectedFoliageType.RenderShadows = (ShadowCastingMode)EditorGUILayout.EnumFlagsField(SelectedFoliageType.RenderShadows);
         GUILayout.EndHorizontal();
         GUILayout.Space(5);
         // Receive shadows
         GUILayout.BeginHorizontal();
         GUILayout.Label("Receive shadows", FTStyles.Label, GUILayout.Width(150));
-        _foliageTypes[_selectedIndex].ReceiveShadows = EditorGUILayout.Toggle(_foliageTypes[_selectedIndex].ReceiveShadows);
+        SelectedFoliageType.ReceiveShadows = EditorGUILayout.Toggle(SelectedFoliageType.ReceiveShadows);
         GUILayout.EndHorizontal();
         #endregion
 
@@ -392,8 +399,6 @@ public class FTPaint : EditorWindow
 
     private void Paint()
     {
-        FoliageType currentFoliageType = _foliageTypes[_selectedIndex];
-
         Vector3[] points = Brush.GetPoints();
 
         // Pour chacun des points du brush on lance un rayon qui va tester les collisions
@@ -403,19 +408,19 @@ public class FTPaint : EditorWindow
             Vector3 startRayPosition = points[i] + Brush.Normal * Brush.DebugLinePointSize;
             float rayDistance = Brush.DebugLinePointSize + 0.5f;
 
-            if (Physics.Raycast(startRayPosition, Brush.InvertNormal, out hit, rayDistance, currentFoliageType.LayerMask))
+            if (Physics.Raycast(startRayPosition, Brush.InvertNormal, out hit, rayDistance, SelectedFoliageType.LayerMask))
             {
                 // Scale
-                Vector3 randomScale = FTUtils.RandomUniformVector3(minimum: currentFoliageType.MinimumScale, maximum: currentFoliageType.MaximumScale);
+                Vector3 randomScale = FTUtils.RandomUniformVector3(minimum: SelectedFoliageType.MinimumScale, maximum: SelectedFoliageType.MaximumScale);
 
                 // Rotation
                 Quaternion finalRotation = Quaternion.identity;
 
-                if (currentFoliageType.AlignToNormal)
+                if (SelectedFoliageType.AlignToNormal)
                 {
                     finalRotation = Quaternion.FromToRotation(Vector3.up, hit.normal);
                 }
-                if (currentFoliageType.RandomRotation)
+                if (SelectedFoliageType.RandomRotation)
                 {
                     Quaternion yRotation = Quaternion.AngleAxis(Random.Range(0, 360), Vector3.up);
                     finalRotation *= yRotation;
@@ -423,17 +428,17 @@ public class FTPaint : EditorWindow
 
                 // Position
                 Vector3 position = hit.point;
-                FoliageData foliageData = SceneManager.SceneData.GetFoliageDataFromId(currentFoliageType.GetID);
+                FoliageData foliageData = SceneManager.SceneData.GetFoliageDataFromId(SelectedFoliageType.GetID);
 
                 if (foliageData == null)
                 {
                     // Create a new foliage Data and add it to data container
                     FoliageData newFoliageData = new FoliageData(
-                        id: currentFoliageType.GetID,
-                        mesh: currentFoliageType.Mesh,
-                        material: currentFoliageType.Material,
-                        renderShadows: currentFoliageType.RenderShadows,
-                        receiveShadows: currentFoliageType.ReceiveShadows
+                        id: SelectedFoliageType.GetID,
+                        mesh: SelectedFoliageType.Mesh,
+                        material: SelectedFoliageType.Material,
+                        renderShadows: SelectedFoliageType.RenderShadows,
+                        receiveShadows: SelectedFoliageType.ReceiveShadows
                         );
                     SceneManager.SceneData.FoliageData.Add(newFoliageData);
                     foliageData = newFoliageData;
@@ -452,7 +457,7 @@ public class FTPaint : EditorWindow
 
     private void Erase()
     {
-        FoliageData foliageToRemove = SceneManager.SceneData.GetFoliageDataFromId(_foliageTypes[_selectedIndex].GetID);
+        FoliageData foliageToRemove = SceneManager.SceneData.GetFoliageDataFromId(SelectedFoliageType.GetID);
 
         for (int i = 0; i < foliageToRemove.Matrice.Count; i++)
         {
@@ -508,6 +513,11 @@ public class FTPaint : EditorWindow
         }
     }
 
+    private FoliageType SelectedFoliageType
+    {
+        get { return _foliageTypes[_selectedIndex];}
+    }
+
     // Get the foliage scene manager, if doesn't exist create a new one in the current scene
     private FTSceneManager SceneManager
     {
@@ -558,6 +568,13 @@ public class FTPaint : EditorWindow
         AssetDatabase.SaveAssets();
 
         return asset;
+    }
+
+    async void PaintDelayAsync()
+    {
+        _canPaint = false;
+        await Task.Delay((int)(_paintFrequency * 1000));
+        _canPaint = true;
     }
 
     private void SaveParameters()
