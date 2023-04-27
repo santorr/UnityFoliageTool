@@ -12,17 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e8c7f8f9877474441ab51d263337ed4f, type: 3}
   m_Name: FT_Grass_0
   m_EditorClassIdentifier: 
-  Mesh: {fileID: -4147266318922990756, guid: 7032ad8ff64e3a44bb7620965c3da9a3, type: 3}
-  Material: {fileID: 2100000, guid: 892db6d489568844a80da63b549100e4, type: 2}
+  Prefab: {fileID: 471163686278761272, guid: cdf7037d5ba4f2a4da0c1d44e26a87a9, type: 3}
   LayerMask:
     serializedVersion: 2
     m_Bits: 8
   RenderShadows: 0
-  ReceiveShadows: 1
+  ReceiveShadows: 0
   AlignToNormal: 1
   RandomRotation: 1
   Offset: 0
   MinimumScale: 0.5
   MaximumScale: 1.5
-  SplatterDistance: 0.4
-  RandomizeDistance: 0.25

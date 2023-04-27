@@ -1,25 +1,18 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 [System.Serializable]
 public class FoliageData
 {
-    public Mesh Mesh;
-    public Material Material;
-    public ShadowCastingMode RenderShadows;
-    public bool ReceiveShadows = true;
+    public FoliageType FoliageType;
     public string ID;
     public List<Matrix4x4> Matrice = new List<Matrix4x4>();
     
-    public FoliageData(string id, Mesh mesh, Material material, ShadowCastingMode renderShadows, bool receiveShadows) 
+    public FoliageData(string id, FoliageType foliageType) 
     {
         ID = id;
-        Mesh = mesh;
-        Material = material;
-        RenderShadows = renderShadows;
-        ReceiveShadows = receiveShadows;
+        FoliageType = foliageType;
     }
 
     public Vector3 Scale(int matriceIndex)
@@ -45,8 +38,6 @@ public class FoliageData
 
     public void Clear()
     {
-        Mesh = null;
-        Material = null;
         Matrice.Clear();
     }
 }

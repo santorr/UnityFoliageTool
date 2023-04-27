@@ -1,11 +1,12 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class FTSplatter : MonoBehaviour
 {
     [SerializeField] public List<FoliageType> _foliageTypes = new List<FoliageType>();
+    public float SplatterDistance = 0.4f;
+    public float RandomizeDistance = 0.25f;
 
     private Vector3 _bounds;
 
@@ -37,25 +38,22 @@ public class FTSplatter : MonoBehaviour
                 // Create a new Foliage data
                 foliageData = new FoliageData(
                     id: _foliageTypes[i].GetID,
-                    mesh: _foliageTypes[i].Mesh,
-                    material: _foliageTypes[i].Material,
-                    renderShadows: _foliageTypes[i].RenderShadows,
-                    receiveShadows: _foliageTypes[i].ReceiveShadows
+                    foliageType: _foliageTypes[i]
                     );
                 sceneManager.SceneData.FoliageData.Add(foliageData);
             }
 
             // Start creating from grid
-            int numTraceX = (int)(_bounds.x / _foliageTypes[i].SplatterDistance);
-            int numTraceZ = (int)(_bounds.z / _foliageTypes[i].SplatterDistance);
+            int numTraceX = (int)(_bounds.x / SplatterDistance);
+            int numTraceZ = (int)(_bounds.z / SplatterDistance);
 
             for (int vertical = 0; vertical < numTraceX; vertical++)
             {
                 for (int horizontal = 0; horizontal < numTraceZ; horizontal++)
                 {
 
-                    Vector3 splatterPoint = transform.position - new Vector3(_bounds.x / 2f, 0, _bounds.z / 2f) + new Vector3(vertical * _foliageTypes[i].SplatterDistance, 0, horizontal * _foliageTypes[i].SplatterDistance);
-                    Vector3 randomPosition = RandomPositionInCircle(splatterPoint, _foliageTypes[i].RandomizeDistance);
+                    Vector3 splatterPoint = transform.position - new Vector3(_bounds.x / 2f, 0, _bounds.z / 2f) + new Vector3(vertical * SplatterDistance, 0, horizontal * SplatterDistance);
+                    Vector3 randomPosition = RandomPositionInCircle(splatterPoint, RandomizeDistance);
 
                     // Generate scale based on minimum and maximum values
                     Vector3 randomScale = FTUtils.RandomUniformVector3(minimum: _foliageTypes[i].MinimumScale, maximum: _foliageTypes[i].MaximumScale);
@@ -90,7 +88,7 @@ public class FTSplatter : MonoBehaviour
             }   
         }
         EditorUtility.SetDirty(sceneManager.SceneData);
-        sceneManager.UpdateFoliage();
+        sceneManager.CreateInstances();
     }
 
     private Vector3 RandomPositionInCircle(Vector3 position, float radius)

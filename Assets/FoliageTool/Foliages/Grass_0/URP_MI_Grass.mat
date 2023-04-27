@@ -121,6 +121,7 @@ Material:
     - _CullingAngle: 180
     - _CullingDistance: 100
     - _Cutoff: 0.5
+    - _Debug_wind: 0
     - _DetailNormalMapScale: 1
     - _Dither: 2
     - _DstBlend: 0
@@ -131,7 +132,7 @@ Material:
     - _Metallic: 0
     - _Mode: 0
     - _NormalIntensity: 3
-    - _Normal_intensity: 3
+    - _Normal_intensity: 1
     - _OcclusionStrength: 1
     - _Parallax: 0.02
     - _QueueControl: 0
@@ -144,8 +145,21 @@ Material:
     - _Specular_intensity: 0
     - _SrcBlend: 1
     - _UVSec: 0
+    - _Wind_amplitude: 2
+    - _Wind_density: 0.51
+    - _Wind_distorsion_intensity: 2
+    - _Wind_intensity: 0.01
+    - _Wind_noise_scale: 2
+    - _Wind_speed: 3
+    - _Wind_speed_1: 2
+    - _Wind_strength: 0.015
+    - _Wind_x_distorsion: -16.65
+    - _Wind_y_distorsion: -73.26
     - _ZWrite: 1
+    - _power: 8.15
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _Wind_direction: {r: 1, g: 0, b: 0, a: 0}
+    - _Wind_movement: {r: 0, g: 1, b: 0, a: 0}
   m_BuildTextureStacks: []

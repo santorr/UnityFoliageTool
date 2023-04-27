@@ -12,17 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e8c7f8f9877474441ab51d263337ed4f, type: 3}
   m_Name: FT_Tree_0
   m_EditorClassIdentifier: 
-  Mesh: {fileID: -8650999628810460405, guid: 7b71437441ed9bf44ac7f70646028586, type: 3}
-  Material: {fileID: 2100000, guid: f14a0122eeb3db049960eb7ebf000359, type: 2}
+  Prefab: {fileID: 1181407591199902903, guid: b2fa43ee4d627e041b41971e471d4d5a, type: 3}
   LayerMask:
     serializedVersion: 2
     m_Bits: 8
   RenderShadows: 1
-  ReceiveShadows: 1
+  ReceiveShadows: 0
   AlignToNormal: 1
   RandomRotation: 1
   Offset: 0
-  MinimumScale: 0.5
+  MinimumScale: 0.96610165
   MaximumScale: 1.5
   SplatterDistance: 0.5
   RandomizeDistance: 0.25

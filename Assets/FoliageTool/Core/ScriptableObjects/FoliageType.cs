@@ -1,7 +1,5 @@
-using System;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.SocialPlatforms;
 
 /// <summary>
 /// This class allow you to setup all parameters to procedurally generate foliage.
@@ -10,8 +8,7 @@ using UnityEngine.SocialPlatforms;
 public class FoliageType : ScriptableObject
 {
     [Header("Base")]
-    public Mesh Mesh;
-    public Material Material;
+    public GameObject Prefab;
     public LayerMask LayerMask;
 
     [Header("Rendering")]
@@ -29,11 +26,6 @@ public class FoliageType : ScriptableObject
     public float MinimumScale = 0.75f;
     public float MaximumScale = 1f;
 
-    [Header("Settings")]
-    [Min(0)] public float SplatterDistance = 1f;
-    [Min(0)] public float RandomizeDistance = 1f;
-
-
     public string GetID
     {
         get
@@ -46,6 +38,38 @@ public class FoliageType : ScriptableObject
             {
                 return null;
             }
+        }
+    }
+
+    // Return mesh of Prefab object
+    public Mesh Mesh
+    {
+        get
+        {
+            if (Prefab != null)
+            {
+                if (Prefab.GetComponent<MeshFilter>() != null)
+                {
+                    return Prefab.GetComponent<MeshFilter>().sharedMesh;
+                }
+            }
+            return null;
+        }
+    }
+
+    // Return array of materials of Prefab object
+    public Material[] Materials
+    {
+        get
+        {
+            if (Prefab != null)
+            {
+                if (Prefab.GetComponent<MeshRenderer>() != null)
+                {
+                    return Prefab.GetComponent<MeshRenderer>().sharedMaterials;
+                }
+            }
+            return null;
         }
     }
 }

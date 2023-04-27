@@ -321,24 +321,13 @@ public class FTPaint : EditorWindow
         GUILayout.Label("Mesh", FTStyles.Title);
         GUILayout.Space(5);
         GUILayout.BeginHorizontal();
-        GUILayout.Label("Mesh", FTStyles.Label, GUILayout.Width(150));
-        SelectedFoliageType.Mesh = (Mesh)EditorGUILayout.ObjectField(SelectedFoliageType.Mesh, typeof(Mesh), false);
-        GUILayout.EndHorizontal();
-        GUILayout.Space(5);
-        GUILayout.BeginHorizontal();
-        GUILayout.Label("Material", FTStyles.Label, GUILayout.Width(150));
-        SelectedFoliageType.Material = (Material)EditorGUILayout.ObjectField(SelectedFoliageType.Material, typeof(Material), false);
+        GUILayout.Label("Prefab", FTStyles.Label, GUILayout.Width(150));
+        SelectedFoliageType.Prefab = (GameObject)EditorGUILayout.ObjectField(SelectedFoliageType.Prefab, typeof(GameObject), false);
         GUILayout.EndHorizontal();
         #endregion
         GUILayout.Space(5);
         #region Painting area
         GUILayout.Label("Painting", FTStyles.Title);
-        GUILayout.Space(5);
-        // Splatter distance
-        GUILayout.BeginHorizontal();
-        GUILayout.Label("Splatter distance", FTStyles.Label, GUILayout.Width(150));
-        SelectedFoliageType.SplatterDistance = EditorGUILayout.FloatField(SelectedFoliageType.SplatterDistance);
-        GUILayout.EndHorizontal();
         GUILayout.Space(5);
         // Layer mask
         GUILayout.BeginHorizontal();
@@ -438,10 +427,7 @@ public class FTPaint : EditorWindow
                     // Create a new foliage Data and add it to data container
                     FoliageData newFoliageData = new FoliageData(
                         id: SelectedFoliageType.GetID,
-                        mesh: SelectedFoliageType.Mesh,
-                        material: SelectedFoliageType.Material,
-                        renderShadows: SelectedFoliageType.RenderShadows,
-                        receiveShadows: SelectedFoliageType.ReceiveShadows
+                        foliageType: SelectedFoliageType
                         );
                     SceneManager.SceneData.FoliageData.Add(newFoliageData);
                     foliageData = newFoliageData;
@@ -452,7 +438,7 @@ public class FTPaint : EditorWindow
             }
 
             // Update visualisation
-            SceneManager.UpdateFoliage();
+            SceneManager.CreateInstances();
 
             EditorUtility.SetDirty(SceneManager.SceneData);
         }
@@ -470,7 +456,7 @@ public class FTPaint : EditorWindow
                 foliageToRemove.Matrice.RemoveAt(i);
             }
         }
-        SceneManager.UpdateFoliage();
+        SceneManager.CreateInstances();
         EditorUtility.SetDirty(SceneManager.SceneData);
     }
 

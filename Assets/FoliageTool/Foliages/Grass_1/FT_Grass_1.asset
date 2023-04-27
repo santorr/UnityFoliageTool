@@ -12,8 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e8c7f8f9877474441ab51d263337ed4f, type: 3}
   m_Name: FT_Grass_1
   m_EditorClassIdentifier: 
-  Mesh: {fileID: 3490609562700161006, guid: 9398a07bf8712094cbee2dcb35e4ab8f, type: 3}
-  Material: {fileID: 2100000, guid: b84f909df3d2bca43aeeb874b8f83803, type: 2}
+  Prefab: {fileID: 1861648268355948875, guid: b3193c92f430ff24cbef1cab464c118c, type: 3}
   LayerMask:
     serializedVersion: 2
     m_Bits: 8
