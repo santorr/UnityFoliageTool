@@ -15,4 +15,22 @@ public static class FTUtils
         float randomZ = Random.Range(minimum, maximum);
         return new Vector3(randomX, randomY, randomZ);
     }
+
+    public static void Message(bool isDebug, object sender, string message)
+    {
+        if (isDebug)
+        {
+            Debug.Log(sender + " : " + message);
+        }
+    }
+
+    // Transform a world location to grid location based on ComponentSize
+    public static Vector3 TransformWorldToGrid(Vector3 worldPosition, float gridSize)
+    {
+        return new Vector3(
+            Mathf.Round(worldPosition.x / gridSize) * gridSize,
+            Mathf.Round(worldPosition.y / gridSize) * gridSize,
+            Mathf.Round(worldPosition.z / gridSize) * gridSize
+            );
+    }
 }

@@ -66,18 +66,20 @@ public class FTPaint : EditorWindow
     public EPaintMode PaintMode { get; private set; }
     public Vector2 FoliageTypesScrollPosition { get; private set; }
     public Vector2 ParametersScrollPosition { get; private set; }
+    public FTComponentData[] activeComponents { get; private set; }
 
-    FTSceneManager _sceneManager;
-    private FTSceneManager SceneManager
+    FTManager _componentsManager;
+
+    private FTManager ComponentsManager
     {
         get
         {
-            if (_sceneManager == null)
+            if (_componentsManager == null)
             {
-                _sceneManager = FindAnyObjectByType<FTSceneManager>();
-                return _sceneManager;
+                _componentsManager = FindAnyObjectByType<FTManager>();
+                return _componentsManager;
             }
-            return _sceneManager;
+            return _componentsManager;
         }
     }
 
@@ -117,29 +119,29 @@ public class FTPaint : EditorWindow
     private void OnGUI()
     {
         // Check ici si la scene contient un un FTSceneManager
-        if (FindObjectOfType<FTSceneManager>() == null)
+        if (FindObjectOfType<FTManager>() == null)
         {
             GUILayout.Label("You need at least one FTSceneManager in the scene. You can create it manually by adding the script 'FTSceneManager' to an empty GameObject or by clicking on the button.", FTStyles.Label);
 
             if (GUILayout.Button("Create scene manager", GUILayout.Height(30)))
             {
-                _sceneManager = CreateSceneManager();
+                _componentsManager = CreateComponentsManager();
             }
             return;
         }
 
         // Check ici si le FTSceneManager contient un FTSceneData
-        if (FindObjectOfType<FTSceneManager>().SceneData == null)
+        if (FindObjectOfType<FTManager>().SceneData == null)
         {
             GUILayout.Label("The 'FTSceneManager' has no input FTSceneData. It means you can't store foliage data. You can create it manually by right clicking in your content 'Create > Foliage > Data container'.\n" +
                 "Or drag and drop an existing FTSceneData if you already have for this scene.", FTStyles.Label);
 
-            _sceneManager.SceneData = (FTSceneData)EditorGUILayout.ObjectField(_sceneManager.SceneData, typeof(FTSceneData), false);
+            _componentsManager.SceneData = (FTSceneData)EditorGUILayout.ObjectField(_componentsManager.SceneData, typeof(FTSceneData), false);
 
             GUILayout.Label("You can also create one by clicking on the button above. It will create a FTScene data at scene location in the content, make sure you don't have one because it will overwrite.", FTStyles.Label);
             if (GUILayout.Button("Create scene data", GUILayout.Height(30)))
             {
-                _sceneManager.SceneData = CreateSceneData();
+                _componentsManager.SceneData = CreateSceneData();
             }
 
             return;
@@ -402,12 +404,12 @@ public class FTPaint : EditorWindow
 
             if (Physics.Raycast(startRayPosition, Brush.InvertNormal, out hit, rayDistance, SelectedFoliageType.LayerMask))
             {
+                #region Create transform
                 // Scale
                 Vector3 randomScale = FTUtils.RandomUniformVector3(minimum: SelectedFoliageType.MinimumScale, maximum: SelectedFoliageType.MaximumScale);
 
                 // Rotation
                 Quaternion finalRotation = Quaternion.identity;
-
                 if (SelectedFoliageType.AlignToNormal)
                 {
                     finalRotation = Quaternion.FromToRotation(Vector3.up, hit.normal);
@@ -420,44 +422,47 @@ public class FTPaint : EditorWindow
 
                 // Position
                 Vector3 position = hit.point;
-                FoliageData foliageData = SceneManager.SceneData.GetFoliageDataFromId(SelectedFoliageType.GetID);
 
-                if (foliageData == null)
-                {
-                    // Create a new foliage Data and add it to data container
-                    FoliageData newFoliageData = new FoliageData(
-                        id: SelectedFoliageType.GetID,
-                        foliageType: SelectedFoliageType
-                        );
-                    SceneManager.SceneData.FoliageData.Add(newFoliageData);
-                    foliageData = newFoliageData;
-                }
-
+                // Create the instance matrix
                 Matrix4x4 matrice = Matrix4x4.TRS(position, finalRotation, randomScale);
-                foliageData.Matrice.Add(matrice);
+                #endregion
+
+                ComponentsManager.SceneData.AddFoliage(SelectedFoliageType, matrice);
             }
 
-            // Update visualisation
-            SceneManager.CreateInstances();
-
-            EditorUtility.SetDirty(SceneManager.SceneData);
+            EditorUtility.SetDirty(ComponentsManager.SceneData);
         }
     }
 
     // Find the SelectedFoliageType from his ID in the FoliageData and loop over all matrix to compare distance from brush center, remove them if distance is less than radius
     private void Erase()
     {
-        FoliageData foliageToRemove = SceneManager.SceneData.GetFoliageDataFromId(SelectedFoliageType.GetID);
+        FTComponentData activeComponentData = ComponentsManager.SceneData.GetComponentDataAtPosition(Brush.Position);
+
+        if (activeComponentData == null)
+        {
+            return;
+        }
+
+        FTComponentData.FoliageData foliageToRemove = activeComponentData.ContainsFoliageType(SelectedFoliageType);
+
+        if (foliageToRemove == null)
+        {
+            return;
+        }
 
         for (int i = 0; i < foliageToRemove.Matrice.Count; i++)
         {
-            if (Vector3.Distance(Brush.Position, foliageToRemove.Position(i)) < Brush.Radius)
+            if (Vector3.Distance(Brush.Position, foliageToRemove.GetInstancePosition(i)) < Brush.Radius)
             {
                 foliageToRemove.Matrice.RemoveAt(i);
             }
         }
-        SceneManager.CreateInstances();
-        EditorUtility.SetDirty(SceneManager.SceneData);
+
+        ComponentsManager.SceneData.CleanComponent(activeComponentData);
+        ComponentsManager.UpdateComponent(activeComponentData);
+
+        EditorUtility.SetDirty(ComponentsManager.SceneData);
     }
 
     // Draw the brush in the scene depending on _paintMode and SelectedFoliageType LayerMask
@@ -522,10 +527,10 @@ public class FTPaint : EditorWindow
     }
 
     // Create and return a FTSceneManager in the current scene that is able to store a FTSceneManager and display data
-    private FTSceneManager CreateSceneManager()
+    private FTManager CreateComponentsManager()
     {
         GameObject FTManagerObject = new GameObject("FT_Manager");
-        return FTManagerObject.AddComponent<FTSceneManager>();
+        return FTManagerObject.AddComponent<FTManager>();
     }
 
     // Create and return a FTSceneData asset at scene content location that contains all scene foliage data

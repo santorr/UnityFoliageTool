@@ -21,7 +21,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: URP_MI_Tree-Trunk_0
-  m_Shader: {fileID: -6465566751694194690, guid: f6da43d0307a8d74ebb2c4b68509c131, type: 3}
+  m_Shader: {fileID: -6465566751694194690, guid: 6fe4aee2ee148a04fac1aed48cf318df, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
@@ -116,11 +116,13 @@ Material:
     m_Ints: []
     m_Floats:
     - PROCEDURAL_INSTANCING: 1
+    - _Alpha_cutout: 1
     - _Ambient_occlusion_intensity: 2
     - _BumpScale: 1
     - _CullingAngle: 180
     - _CullingDistance: 100
     - _Cutoff: 0.5
+    - _Debug_wind: 0
     - _DetailNormalMapScale: 1
     - _Dither: 1.5
     - _DstBlend: 0
@@ -131,7 +133,7 @@ Material:
     - _Metallic: 0
     - _Mode: 0
     - _NormalIntensity: 3
-    - _Normal_intensity: 3
+    - _Normal_intensity: 1
     - _OcclusionStrength: 1
     - _Parallax: 0.02
     - _QueueControl: 0
@@ -144,11 +146,16 @@ Material:
     - _Specular_intensity: 0.05
     - _SrcBlend: 1
     - _UVSec: 0
+    - _Wind_amplitude: 2
     - _Wind_density: 0
+    - _Wind_distorsion_intensity: 2
+    - _Wind_intensity: 0
+    - _Wind_noise_scale: 2
     - _Wind_speed: 0
     - _Wind_strength: 0
     - _ZWrite: 1
     m_Colors:
+    - _Base_color_teint: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _Wind_direction: {r: 0, g: 0, b: 0, a: 0}

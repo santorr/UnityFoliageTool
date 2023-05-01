@@ -116,14 +116,14 @@ Material:
     m_Ints: []
     m_Floats:
     - PROCEDURAL_INSTANCING: 1
-    - _Ambient_occlusion_intensity: 0.5
+    - _Ambient_occlusion_intensity: 0.75
     - _BumpScale: 1
     - _CullingAngle: 180
     - _CullingDistance: 100
     - _Cutoff: 0.5
     - _Debug_wind: 0
     - _DetailNormalMapScale: 1
-    - _Dither: 2
+    - _Dither: 1
     - _DstBlend: 0
     - _Float: 1
     - _GlossMapScale: 1
