@@ -50,7 +50,8 @@ public class FTManager : MonoBehaviour
     {
         for (int i = 0; i < Components.Count; i++)
         {
-            Components[i].DrawInstances();
+            float distanceFromCamera = Vector3.Distance(Camera.main.transform.position, Components[i].Bounds.center);
+            Components[i].DrawInstances(distanceFromCamera: distanceFromCamera);
         }
     }
 

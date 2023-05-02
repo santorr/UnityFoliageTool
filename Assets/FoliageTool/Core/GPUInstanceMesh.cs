@@ -4,13 +4,15 @@ using UnityEngine;
 public class GPUInstanceMesh
 {
     private bool IsDebug = false;
-    private Mesh _mesh;
-    private Material[] _materials;
-    private ShadowCastingMode _renderShadows;
-    private bool _receiveShadows;
-    private Matrix4x4[] _matrix;
-    private int _instanceCount;
-    private Bounds _bounds;
+
+    public readonly Mesh Mesh;
+    public readonly Material[] Materials;
+    public readonly ShadowCastingMode RenderShadows;
+    public readonly bool ReceiveShadows;
+    public readonly Matrix4x4[] Matrix;
+    public readonly int InstanceCount;
+    public readonly Bounds Bounds;
+    public readonly int CullingDistance;
 
     private ComputeBuffer[] _argsBuffers = new ComputeBuffer[0];
     private ComputeBuffer[] _foliageBuffers = new ComputeBuffer[0];
@@ -18,39 +20,40 @@ public class GPUInstanceMesh
     // Constructor
     public GPUInstanceMesh(FoliageType foliageType, Matrix4x4[] matrix, Bounds bounds)
     {
-        _mesh = foliageType.Mesh;
-        _materials = foliageType.Materials;
-        _instanceCount = matrix.Length;
-        _matrix = matrix;
-        _renderShadows = foliageType.RenderShadows;
-        _receiveShadows = foliageType.ReceiveShadows;
-        _bounds = bounds;
+        Mesh = foliageType.Mesh;
+        Materials = foliageType.Materials;
+        InstanceCount = matrix.Length;
+        Matrix = matrix;
+        RenderShadows = foliageType.RenderShadows;
+        ReceiveShadows = foliageType.ReceiveShadows;
+        Bounds = bounds;
+        CullingDistance = foliageType.CullingDistance;
 
-        _foliageBuffers = new ComputeBuffer[_materials.Length];
-        _argsBuffers = new ComputeBuffer[_materials.Length];
+        _foliageBuffers = new ComputeBuffer[Materials.Length];
+        _argsBuffers = new ComputeBuffer[Materials.Length];
 
         // Create materials
-        for (int i=0; i<_materials.Length; i++)
+        for (int i=0; i<Materials.Length; i++)
         {
-            _materials[i] = new Material(_materials[i]);
+            Materials[i] = new Material(Materials[i]);
         }
 
         // Create buffers
-        for (int i = 0; i < _materials.Length; i++)
+        for (int i = 0; i < Materials.Length; i++)
         {
             // Create a new foliage buffer
-            _foliageBuffers[i] = new ComputeBuffer(_instanceCount, sizeof(float) * 16);
+            _foliageBuffers[i] = new ComputeBuffer(InstanceCount, sizeof(float) * 16);
             _argsBuffers[i] = new ComputeBuffer(1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments);
 
-            _foliageBuffers[i].SetData(_matrix);
-            _materials[i].SetBuffer("grassData", _foliageBuffers[i]);
+            _foliageBuffers[i].SetData(Matrix);
+            Materials[i].SetBuffer("grassData", _foliageBuffers[i]);
 
             uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
 
-            args[0] = (uint)_mesh.GetIndexCount(i);
-            args[1] = (uint)_instanceCount;
-            args[2] = (uint)_mesh.GetIndexStart(i);
-            args[3] = (uint)_mesh.GetBaseVertex(i);
+            args[0] = (uint)Mesh.GetIndexCount(i);
+            args[1] = (uint)InstanceCount;
+            args[2] = (uint)Mesh.GetIndexStart(i);
+            args[3] = (uint)Mesh.GetBaseVertex(i);
             _argsBuffers[i].SetData(args);
         }
     }
@@ -58,25 +61,25 @@ public class GPUInstanceMesh
     // Call in update method to render this mesh
     public void Render()
     {
-        for (int i = 0; i < _materials.Length; i++)
+        for (int i = 0; i < Materials.Length; i++)
         {
             Graphics.DrawMeshInstancedIndirect(
-                mesh: _mesh,
+                mesh: Mesh,
                 submeshIndex: i,
-                material: _materials[i],
-                bounds: _bounds,
+                material: Materials[i],
+                bounds: Bounds,
                 bufferWithArgs: _argsBuffers[i],
                 argsOffset: 0,
                 properties: null,
-                castShadows: _renderShadows,
-                receiveShadows: _receiveShadows
+                castShadows: RenderShadows,
+                receiveShadows: ReceiveShadows
                 );
         }
 
-        FTUtils.Message(IsDebug, this, "Draw : " + _matrix.Length + " of " + _mesh + "\n" +
+        FTUtils.Message(IsDebug, this, "Draw : " + Matrix.Length + " of " + Mesh + "\n" +
             "Foliage buffer count : " + _foliageBuffers.Length + "\n" +
             "Args buffer count : " + _argsBuffers.Length + "\n" +
-            "Matrix length : " + _matrix.Length);
+            "Matrix length : " + Matrix.Length);
     }
 
     // Clear buffers

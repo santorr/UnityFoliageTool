@@ -12,6 +12,7 @@ public class FoliageType : ScriptableObject
     public LayerMask LayerMask;
 
     [Header("Rendering")]
+    [Range(0, 100)] public int CullingDistance = 100;
     public UnityEngine.Rendering.ShadowCastingMode RenderShadows;
     public bool ReceiveShadows = true;
 

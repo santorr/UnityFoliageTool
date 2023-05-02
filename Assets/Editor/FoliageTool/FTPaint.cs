@@ -758,8 +758,8 @@ public class FTBrush
     // Constructor
     public FTBrush()
     {
-        PaintPreset = new FTBrushPreset(color: new Color(0.27f, 0.38f, 0.49f, 1));
-        ErasePreset = new FTBrushPreset(color: new Color(1f, 0f, 0f, 1));
+        PaintPreset = new FTBrushPreset(color: new Color(0f, 0.75f, 1f, 1f));
+        ErasePreset = new FTBrushPreset(color: new Color(1f, 0f, 0f, 1f));
     }
 
     // Getter | Setter : Size
@@ -813,7 +813,24 @@ public class FTBrush
     public void DrawCube(Vector3 position, Vector3 size, FTBrushPreset colorPreset)
     {
         Handles.color = colorPreset.Color;
-        Handles.DrawWireCube(position, size);
+        // Handles.DrawWireCube(position, size);
+
+        Vector3 normal = Vector3.up;
+        Vector3 right = Vector3.right * (size.x / 2);
+        Vector3 forward = Vector3.forward * (size.z / 2);
+        Vector3 upperLeft = position - right - forward;
+        Vector3 upperRight = position + right - forward;
+        Vector3 lowerLeft = position - right + forward;
+        Vector3 lowerRight = position + right + forward;
+
+        Handles.DrawAAPolyLine(5, new Vector3[] { upperLeft, upperRight });
+        Handles.DrawAAPolyLine(5, new Vector3[] { upperRight, lowerRight });
+        Handles.DrawAAPolyLine(5, new Vector3[] { lowerRight, lowerLeft });
+        Handles.DrawAAPolyLine(5, new Vector3[] { lowerLeft, upperLeft });
+
+        Handles.DrawSolidRectangleWithOutline(new Vector3[] { upperLeft, upperRight, lowerRight, lowerLeft }, colorPreset.Color * new Color(1f, 1f, 1f, 0.25f), new Color(1f, 1f, 1f, 0f));
+
+
     }
 
     // Draw lines to represent spawn points for foliage types

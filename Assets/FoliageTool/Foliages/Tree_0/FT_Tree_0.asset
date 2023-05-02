@@ -16,6 +16,7 @@ MonoBehaviour:
   LayerMask:
     serializedVersion: 2
     m_Bits: 8
+  CullingDistance: 100
   RenderShadows: 1
   ReceiveShadows: 1
   AlignToNormal: 1
