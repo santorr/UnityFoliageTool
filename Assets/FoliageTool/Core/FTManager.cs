@@ -107,11 +107,14 @@ public class FTManager : MonoBehaviour
     // Draw debug gizmos on each chunks
     private void OnDrawGizmos()
     {
-        Gizmos.color = new Color(0.27f, 0.38f, 0.49f, 1);
-
-        for (int i = 0; i < Components.Count; i++)
+        if (IsDebug)
         {
-            Gizmos.DrawWireCube(Components[i].Bounds.center, Components[i].Bounds.size);
+            Gizmos.color = new Color(0.27f, 0.38f, 0.49f, 1);
+
+            for (int i = 0; i < Components.Count; i++)
+            {
+                Gizmos.DrawWireCube(Components[i].Bounds.center, Components[i].Bounds.size);
+            }
         }
     }
 }

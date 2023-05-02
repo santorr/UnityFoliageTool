@@ -2,6 +2,11 @@ using UnityEngine;
 
 public static class FTUtils
 {
+    public static float Remap(float value, float fromMin, float fromMax, float toMin, float toMax)
+    {
+        return (value - fromMin) / (fromMax - fromMin) * (toMax - toMin) + toMin;
+    } 
+
     public static Vector3 RandomUniformVector3(float minimum, float maximum)
     {
         float randomValue = Random.Range(minimum, maximum);
@@ -25,12 +30,12 @@ public static class FTUtils
     }
 
     // Transform a world location to grid location based on ComponentSize
-    public static Vector3 TransformWorldToGrid(Vector3 worldPosition, float gridSize)
+    public static Vector3 TransformWorldToGrid(Vector3 worldPosition)
     {
         return new Vector3(
-            Mathf.Round(worldPosition.x / gridSize) * gridSize,
-            Mathf.Round(worldPosition.y / gridSize) * gridSize,
-            Mathf.Round(worldPosition.z / gridSize) * gridSize
+            Mathf.Round(worldPosition.x / 25) * 25,
+            Mathf.Round(worldPosition.y / 25) * 25,
+            Mathf.Round(worldPosition.z / 25) * 25
             );
     }
 }

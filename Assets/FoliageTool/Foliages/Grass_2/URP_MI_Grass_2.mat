@@ -116,6 +116,7 @@ Material:
     m_Ints: []
     m_Floats:
     - PROCEDURAL_INSTANCING: 1
+    - _Alpha_cutout: 1.14
     - _Ambient_occlusion_intensity: 0.75
     - _BumpScale: 1
     - _CullingAngle: 180
@@ -158,6 +159,7 @@ Material:
     - _ZWrite: 1
     - _power: 8.15
     m_Colors:
+    - _Base_color_teint: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _Wind_direction: {r: 1, g: 0, b: 0, a: 0}

@@ -15,7 +15,7 @@ public class FTSceneData : ScriptableObject
     public FTComponentData GetComponentDataAtPosition(Vector3 worldPosition)
     {
         // Transform world to grid point
-        Vector3 gridPosition = FTUtils.TransformWorldToGrid(worldPosition: worldPosition, gridSize: ComponentSize);
+        Vector3 gridPosition = FTUtils.TransformWorldToGrid(worldPosition: worldPosition);
 
         for (int i=0; i< ComponentsData.Count; i++)
         {
@@ -31,7 +31,7 @@ public class FTSceneData : ScriptableObject
     public FTComponentData AddComponentData(Vector3 worldPosition)
     {
         // Transform world to grid point
-        Vector3 gridPosition = FTUtils.TransformWorldToGrid(worldPosition: worldPosition, gridSize: ComponentSize);
+        Vector3 gridPosition = FTUtils.TransformWorldToGrid(worldPosition: worldPosition);
         FTComponentData newComponentData = new FTComponentData(gridPosition);
         ComponentsData.Add(newComponentData);
 
@@ -62,9 +62,19 @@ public class FTSceneData : ScriptableObject
         OnComponentDataUpdated?.Invoke(componentData);
     }
 
-    public void RemoveFoliage()
+    public void RemoveFoliageData(FTComponentData componentData, FoliageType foliageType)
     {
+        for (int i=0; i<componentData.FoliagesData.Count; i++)
+        {
+            FTComponentData.FoliageData foliageData = componentData.ContainsFoliageType(foliageType);
 
+            if (foliageData != null)
+            {
+                componentData.FoliagesData.Remove(foliageData);
+                OnComponentDataUpdated?.Invoke(componentData);
+                return;
+            }
+        }
     }
 
     public void CleanComponents()
