@@ -3,6 +3,7 @@
 Work in progress tool based on GPU instancing to create a foliage placement tool like Unreal engine foliage editor.
 
 - Gpu instancing
+- World cells
 - Instance transform : position, rotation, scale
 - Options : cast shadows, receive shadows
 - Shader : base color, normal, RMO (roughness, metallic, ambient occlusion), specular, wind
