@@ -2,23 +2,17 @@
 
 Work in progress tool based on GPU instancing to create a foliage placement tool like Unreal engine foliage editor.
 
-- Basic splatter script
 - Gpu instancing
-- Culling distance + angle
-- Dither alpha
-- Instance position
-- Instance scale
-- Instance rotation
+- Instance transform : position, rotation, scale
 - Options : cast shadows, receive shadows
-- Shader : base color, normal, RMO (roughness, metallic, ambient occlusion), specular
-- Paint tool
-- Erase tool
-- Support multiple instance foliage
+- Shader : base color, normal, RMO (roughness, metallic, ambient occlusion), specular, wind
+- Paint mode : paint, erase, fill
+- Paint control density
+- Support multiple materials per mesh
 
 Features missing :
-- Paint control density
-- Shader : highlight, wind
-- Wind system
+- LOD
+- Frustrum culling
 - More optimization / clean
 
 ![alt text](/Assets/FoliageTool/Screenshots/Screenshot.jpg)
