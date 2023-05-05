@@ -18,7 +18,7 @@ MonoBehaviour:
     m_Bits: 8
   CullingDistance: 50
   RenderShadows: 0
-  ReceiveShadows: 0
+  ReceiveShadows: 1
   AlignToNormal: 1
   RandomRotation: 1
   Offset: 0

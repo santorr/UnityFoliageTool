@@ -49,11 +49,7 @@
             "m_Id": "7957ac621c19460aa12631e67515a9ac"
         }
     ],
-    "m_Keywords": [
-        {
-            "m_Id": "7899a0cfa8e9484bbf4c9a583ba3fed9"
-        }
-    ],
+    "m_Keywords": [],
     "m_Dropdowns": [],
     "m_CategoryData": [
         {
@@ -2234,31 +2230,6 @@
 }
 
 {
-    "m_SGVersion": 1,
-    "m_Type": "UnityEditor.ShaderGraph.ShaderKeyword",
-    "m_ObjectId": "7899a0cfa8e9484bbf4c9a583ba3fed9",
-    "m_Guid": {
-        "m_GuidSerialized": "a7272aec-62ab-4b46-a7de-00a7880efaad"
-    },
-    "m_Name": "PROCEDURAL_INSTANCING_ON",
-    "m_DefaultRefNameVersion": 1,
-    "m_RefNameGeneratedByDisplayName": "PROCEDURAL_INSTANCING_ON",
-    "m_DefaultReferenceName": "_PROCEDURAL_INSTANCING_ON",
-    "m_OverrideReferenceName": "PROCEDURAL_INSTANCING_ON",
-    "m_GeneratePropertyBlock": false,
-    "m_UseCustomSlotLabel": false,
-    "m_CustomSlotLabel": "",
-    "m_DismissedVersion": 0,
-    "m_KeywordType": 0,
-    "m_KeywordDefinition": 1,
-    "m_KeywordScope": 1,
-    "m_KeywordStages": 63,
-    "m_Entries": [],
-    "m_Value": 1,
-    "m_IsEditable": true
-}
-
-{
     "m_SGVersion": 3,
     "m_Type": "UnityEditor.ShaderGraph.Internal.ColorShaderProperty",
     "m_ObjectId": "7957ac621c19460aa12631e67515a9ac",
@@ -2757,11 +2728,7 @@
     "m_Type": "UnityEditor.ShaderGraph.CategoryData",
     "m_ObjectId": "b1501f2b2cc744eb8b6ce53e3f8117c6",
     "m_Name": "",
-    "m_ChildObjectList": [
-        {
-            "m_Id": "7899a0cfa8e9484bbf4c9a583ba3fed9"
-        }
-    ]
+    "m_ChildObjectList": []
 }
 
 {

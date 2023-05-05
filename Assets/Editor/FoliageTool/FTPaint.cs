@@ -55,7 +55,8 @@ public class FTPaint : EditorWindow
     {
         None,
         Paint,
-        Fill
+        Fill,
+        Replace
     }
  
     public readonly FTBrush Brush = new FTBrush();
@@ -150,7 +151,12 @@ public class FTPaint : EditorWindow
 
         GUILayout.Space(5);
 
-        PaintMode = (EPaintMode)EditorGUILayout.EnumPopup("Mode", PaintMode, GUILayout.Height(30));
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("Mode", FTStyles.Label, GUILayout.Width(150));
+        PaintMode = (EPaintMode)GUILayout.Toolbar((int)PaintMode, EPaintMode.GetNames(typeof(EPaintMode)));
+        GUILayout.EndHorizontal(); 
+
+        GUILayout.Space(5);
 
         #region BRUSH
         GUILayout.Label("Brush", FTStyles.Title);

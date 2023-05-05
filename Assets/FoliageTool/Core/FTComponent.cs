@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class FTComponent
 {
-    public bool IsDebug { get; private set; } = false;
+    private bool isDebug = false;
     public string ID { get; private set; }
     public Bounds Bounds { get; private set; }
 
@@ -17,27 +17,33 @@ public class FTComponent
         CreateInstances(data);
     }
 
-    // Pass new data to this component, then create new instances based on new data
+    // Create all instances based on component data
+    private void CreateInstances(FTComponentData data)
+    {
+        ClearAllInstances();
+
+        // Initialize the length of the array
+        Instances = new GPUInstanceMesh[data.FoliagesData.Count];
+
+        // Loop over data to create instances
+        for (int i = 0; i < data.FoliagesData.Count; i++)
+        {
+            Instances[i] = new GPUInstanceMesh(
+                foliageType: data.FoliagesData[i].FoliageType, 
+                matrix: data.FoliagesData[i].Matrice.ToArray(), 
+                bounds: Bounds
+                );
+        }
+    }
+
+    // Send new data to this component, then create new instances based on new data
     public void UpdateInstances(FTComponentData data)
     {
         ClearAllInstances();
         CreateInstances(data);
     }
 
-    private void CreateInstances(FTComponentData data)
-    {
-        ClearAllInstances();
-
-        Instances = new GPUInstanceMesh[data.FoliagesData.Count];
-
-        for (int i = 0; i < data.FoliagesData.Count; i++)
-        {
-            GPUInstanceMesh newInstance = new GPUInstanceMesh(foliageType: data.FoliagesData[i].FoliageType, matrix: data.FoliagesData[i].Matrice.ToArray(), bounds: Bounds);
-            Instances[i] = newInstance;
-        }
-    }
-
-    // Render all instances
+    // Render all instances if distance to camera is less than culling distance
     public void DrawInstances(float distanceFromCamera)
     {
         for (int i=0; i<Instances.Length; i++)
@@ -49,7 +55,7 @@ public class FTComponent
         }
     }
 
-    // Remove instances references
+    // Remove instances references and clear buffers to prevent memory leaks
     public void ClearAllInstances()
     {
         for (int i=0; i<Instances.Length; i++)
