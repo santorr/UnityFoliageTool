@@ -9,7 +9,7 @@ public class GPUInstanceMesh
     public readonly Material[] Materials;
     public readonly ShadowCastingMode RenderShadows;
     public readonly bool ReceiveShadows;
-    public readonly Matrix4x4[] Matrix;
+    public readonly Matrix4x4[] Matrices;
     public readonly int InstanceCount;
     public readonly Bounds Bounds;
     public readonly int CullingDistance;
@@ -19,28 +19,36 @@ public class GPUInstanceMesh
     private ComputeBuffer _foliageBuffer;
 
     // Constructor
-    public GPUInstanceMesh(FoliageType foliageType, Matrix4x4[] matrix, Bounds bounds)
+    public GPUInstanceMesh(FoliageType foliageType, Matrix4x4[] matrices, Bounds bounds)
     {
         // Initialize all variables
         Mesh = foliageType.Mesh;
         Materials = foliageType.Materials;
-        InstanceCount = matrix.Length;
-        Matrix = matrix;
+        InstanceCount = matrices.Length;
+        Matrices = matrices;
         RenderShadows = foliageType.RenderShadows;
         ReceiveShadows = foliageType.ReceiveShadows;
         Bounds = bounds;
         CullingDistance = foliageType.CullingDistance;
 
+        CreateBuffers();
+    }
+
+    /// <summary>
+    /// Create all buffers
+    /// </summary>
+    private void CreateBuffers()
+    {
         // Initialize args buffer, need one buffer per submesh
         _argsBuffers = new ComputeBuffer[Materials.Length];
         _materialProperties = new MaterialPropertyBlock[Materials.Length];
 
         // Create foliage buffer, this buffer is the same foreach submesh
         _foliageBuffer = new ComputeBuffer(InstanceCount, sizeof(float) * 16);
-        _foliageBuffer.SetData(Matrix);
+        _foliageBuffer.SetData(Matrices);
 
         // Create instance materials and buffers
-        for (int i=0; i<Materials.Length; i++)
+        for (int i = 0; i < Materials.Length; i++)
         {
             // Create material properties
             _materialProperties[i] = new MaterialPropertyBlock();
@@ -55,9 +63,13 @@ public class GPUInstanceMesh
             args[3] = (uint)Mesh.GetBaseVertex(i);
             _argsBuffers[i].SetData(args);
         }
+
+        return;
     }
 
-    // Call in update method to render this instance
+    /// <summary>
+    /// Render instance
+    /// </summary>
     public void Render()
     {
         for (int i = 0; i < Materials.Length; i++)
@@ -75,12 +87,16 @@ public class GPUInstanceMesh
                 );
         }
 
-        FTUtils.Message(_isDebug, this, "Draw : " + Matrix.Length + " of " + Mesh + "\n" +
+        FTUtils.Message(_isDebug, this, "Draw : " + Matrices.Length + " of " + Mesh + "\n" +
             "Args buffer count : " + _argsBuffers.Length + "\n" +
-            "Matrix length : " + Matrix.Length);
+            "Matrix length : " + Matrices.Length);
+
+        return;
     }
 
-    // Clear buffers
+    /// <summary>
+    /// Clear all buffers
+    /// </summary>
     public void ClearBuffers()
     {
         if (_argsBuffers != null)
@@ -97,5 +113,7 @@ public class GPUInstanceMesh
             _foliageBuffer.Release();
             _foliageBuffer = null;
         }
+
+        return;
     }
 }

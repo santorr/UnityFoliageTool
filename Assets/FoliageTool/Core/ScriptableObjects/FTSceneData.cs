@@ -74,7 +74,7 @@ public class FTSceneData : ScriptableObject
         FTComponentData componentData = GetComponentDataAtPosition(matrix.GetPosition()) ?? AddComponentData(matrix.GetPosition());
         FTComponentData.FoliageData foliageData = componentData.GetFoliageDataFromFoliageType(foliageType) ?? componentData.AddFoliageData(foliageType);
 
-        foliageData.Matrice.Add(matrix);
+        foliageData.Matrices.Add(matrix);
 
         OnComponentDataUpdated?.Invoke(componentData);
 
@@ -134,7 +134,7 @@ public class FTSceneData : ScriptableObject
     /// <param name="componentData"></param>
     public void CleanComponent(FTComponentData componentData)
     {
-        componentData.FoliagesData.RemoveAll(foliageData => foliageData.Matrice.Count == 0);
+        componentData.FoliagesData.RemoveAll(foliageData => foliageData.Matrices.Count == 0);
 
         if (componentData.FoliagesData.Count == 0)
         {
@@ -197,11 +197,12 @@ public class FTComponentData
         return newFoliageData;
     }
 
+
     [System.Serializable]
     public class FoliageData
     {
         public FoliageType FoliageType;
-        public List<Matrix4x4> Matrice = new List<Matrix4x4>();
+        public List<Matrix4x4> Matrices = new List<Matrix4x4>();
 
         public FoliageData(FoliageType foliageType)
         {
@@ -210,7 +211,7 @@ public class FTComponentData
 
         public Vector3 GetInstancePosition(int matriceIndex)
         {
-            return Matrice[matriceIndex].GetPosition();
+            return Matrices[matriceIndex].GetPosition();
         }
     }
 }

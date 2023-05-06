@@ -7,7 +7,6 @@ public class FTComponent
 
     public GPUInstanceMesh[] Instances = new GPUInstanceMesh[0];
 
-    // Constructor
     public FTComponent(string id, Bounds bounds, FTComponentData componentData)
     {
         ID = id;
@@ -27,7 +26,7 @@ public class FTComponent
         // Loop over data to create instances
         for (int i = 0; i < data.FoliagesData.Count; i++)
         {
-            Instances[i] = new GPUInstanceMesh(foliageType: data.FoliagesData[i].FoliageType, matrix: data.FoliagesData[i].Matrice.ToArray(), bounds: Bounds);
+            Instances[i] = new GPUInstanceMesh(foliageType: data.FoliagesData[i].FoliageType, matrices: data.FoliagesData[i].Matrices.ToArray(), bounds: Bounds);
         }
     }
 

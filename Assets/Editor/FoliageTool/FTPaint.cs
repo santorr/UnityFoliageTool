@@ -452,16 +452,13 @@ public class FTPaint : EditorWindow
             // Get the foliage data in the current component
             FTComponentData.FoliageData foliageToRemove = components[i].GetFoliageDataFromFoliageType(SelectedFoliageType);
 
-            if (foliageToRemove == null)
-            {
-                continue;
-            }
+            if (foliageToRemove == null) continue;
 
-            for (int j = 0; j < foliageToRemove.Matrice.Count; j++)
+            for (int j = 0; j < foliageToRemove.Matrices.Count; j++)
             {
                 if (Vector3.Distance(Brush.Position, foliageToRemove.GetInstancePosition(j)) < Brush.Radius)
                 {
-                    foliageToRemove.Matrice.RemoveAt(j);
+                    foliageToRemove.Matrices.RemoveAt(j);
                 }
             }
 
@@ -470,35 +467,6 @@ public class FTPaint : EditorWindow
         }
 
         EditorUtility.SetDirty(ComponentsManager.SceneData);
-
-        /*
-        FTComponentData activeComponentData = ComponentsManager.SceneData.GetComponentDataAtPosition(Brush.Position);
-
-        if (activeComponentData == null)
-        {
-            return;
-        }
-
-        FTComponentData.FoliageData foliageToRemove = activeComponentData.ContainsFoliageType(SelectedFoliageType);
-
-        if (foliageToRemove == null)
-        {
-            return;
-        }
-
-        for (int i = 0; i < foliageToRemove.Matrice.Count; i++)
-        {
-            if (Vector3.Distance(Brush.Position, foliageToRemove.GetInstancePosition(i)) < Brush.Radius)
-            {
-                foliageToRemove.Matrice.RemoveAt(i);
-            }
-        }
-
-        ComponentsManager.SceneData.CleanComponent(activeComponentData);
-        ComponentsManager.UpdateComponent(activeComponentData);
-
-        EditorUtility.SetDirty(ComponentsManager.SceneData);
-        */
     }
 
     // ...
