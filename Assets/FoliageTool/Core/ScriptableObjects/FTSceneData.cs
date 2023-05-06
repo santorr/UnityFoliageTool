@@ -5,26 +5,29 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "FTSceneData", menuName = "Foliage/Scene data")]
 public class FTSceneData : ScriptableObject
 {
-    [SerializeField] public int ComponentSize = 25;
+    public int ComponentSize { get; private set; } = 25;
     [SerializeField] public List<FTComponentData> ComponentsData = new List<FTComponentData>();
 
     public static Action<FTComponentData> OnComponentDataCreated;
     public static Action<FTComponentData> OnComponentDataUpdated;
     public static Action<string> OnComponentDataDeleted;
 
-    public FTComponentData[] GetClosestComponentsData(Vector3 worldPosition)
+    /// <summary>
+    /// Get neighbours components data to position
+    /// </summary>
+    /// <param name="worldPosition"></param>
+    /// <returns></returns>
+    public FTComponentData[] GetClosestComponentsData(Vector3 worldPosition, int range = 1)
     {
-        // 0, 1 ,0
-        Vector3 gridPosition = FTUtils.TransformWorldToGrid(worldPosition) / 25f;
+        Vector3 gridCoordinate = FTUtils.TransformWorldToGrid(worldPosition: worldPosition, isGridCoordinate: true);
 
         List<FTComponentData> result = new List<FTComponentData>();
 
-        // L'objectif est d'avoir les composants qui sont autour du composant actuel
         for (int i=0; i< ComponentsData.Count; i++)
         {
-            Vector3 testPosition = FTUtils.TransformWorldToGrid(ComponentsData[i].ComponentPosition) / 25f;
-
-            if (MathF.Abs(testPosition.x - gridPosition.x) <= 1 && MathF.Abs(testPosition.y - gridPosition.y) <= 1 && MathF.Abs(testPosition.z - gridPosition.z) <= 1)
+            if (MathF.Abs(ComponentsData[i].GridCoordinate.x - gridCoordinate.x) <= range && 
+                MathF.Abs(ComponentsData[i].GridCoordinate.y - gridCoordinate.y) <= range && 
+                MathF.Abs(ComponentsData[i].GridCoordinate.z - gridCoordinate.z) <= range)
             {
                 result.Add(ComponentsData[i]);
             }
@@ -33,27 +36,27 @@ public class FTSceneData : ScriptableObject
         return result.ToArray();
     }
 
+    /// <summary>
+    /// Get a component data at position, return null if no component were found.
+    /// </summary>
+    /// <param name="worldPosition"></param>
+    /// <returns></returns>
     public FTComponentData GetComponentDataAtPosition(Vector3 worldPosition)
     {
-        // Transform world to grid point
-        Vector3 gridPosition = FTUtils.TransformWorldToGrid(worldPosition: worldPosition);
+        Vector3 gridPosition = FTUtils.TransformWorldToGrid(worldPosition: worldPosition, isGridCoordinate: true);
 
-        for (int i=0; i< ComponentsData.Count; i++)
-        {
-            if (ComponentsData[i].ComponentPosition == gridPosition)
-            {
-                return ComponentsData[i];
-            }
-        }
-        return null;
+        return ComponentsData.Find(component => component.GridCoordinate == gridPosition);
     }
 
-    // Create new component data
+    /// <summary>
+    /// Create a new component data at position
+    /// </summary>
+    /// <param name="worldPosition"></param>
+    /// <returns></returns>
     public FTComponentData AddComponentData(Vector3 worldPosition)
     {
-        // Transform world to grid point
-        Vector3 gridPosition = FTUtils.TransformWorldToGrid(worldPosition: worldPosition);
-        FTComponentData newComponentData = new FTComponentData(gridPosition);
+        Vector3 gridCoordinate = FTUtils.TransformWorldToGrid(worldPosition: worldPosition, isGridCoordinate: true);
+        FTComponentData newComponentData = new FTComponentData(gridCoordinate: gridCoordinate);
         ComponentsData.Add(newComponentData);
 
         OnComponentDataCreated?.Invoke(newComponentData);
@@ -61,20 +64,28 @@ public class FTSceneData : ScriptableObject
         return newComponentData;
     }
 
+    /// <summary>
+    /// Add a foliage type anywhere with matrix information
+    /// </summary>
+    /// <param name="foliageType"></param>
+    /// <param name="matrix"></param>
     public void AddFoliage(FoliageType foliageType, Matrix4x4 matrix)
     {
-        // Get the component data at location, if null, create a new component data
         FTComponentData componentData = GetComponentDataAtPosition(matrix.GetPosition()) ?? AddComponentData(matrix.GetPosition());
-
-        // Get an existing foliage data in component data, if null, create a new foliage data
         FTComponentData.FoliageData foliageData = componentData.GetFoliageDataFromFoliageType(foliageType) ?? componentData.AddFoliageData(foliageType);
 
         foliageData.Matrice.Add(matrix);
 
         OnComponentDataUpdated?.Invoke(componentData);
+
+        return;
     }
 
-    // Remove foliage data from a specific component data
+    /// <summary>
+    /// Remove a foliage data containing foliage type on specific component data
+    /// </summary>
+    /// <param name="componentData"></param>
+    /// <param name="foliageType"></param>
     public void RemoveFoliageDataInComponentData(FTComponentData componentData, FoliageType foliageType)
     {
         FTComponentData.FoliageData foliageData = componentData.GetFoliageDataFromFoliageType(foliageType);
@@ -82,12 +93,16 @@ public class FTSceneData : ScriptableObject
         if (foliageData == null) return;
 
         componentData.FoliagesData.Remove(foliageData);
+        CleanComponent(componentData);
         OnComponentDataUpdated?.Invoke(componentData);
 
         return;
     }
 
-    // Remove foliage data for all component data
+    /// <summary>
+    /// Remove foliage data containing foliage type for all components data
+    /// </summary>
+    /// <param name="foliageType"></param>
     public void RemoveFoliageData(FoliageType foliageType)
     {
         for (int i=0; i<ComponentsData.Count; i++)
@@ -139,21 +154,25 @@ public class FTSceneData : ScriptableObject
 public class FTComponentData
 {
     public string ID;
-    public Vector3 ComponentPosition;
+    public Vector3 GridCoordinate;
+    public int Size = 25;
     [SerializeField] public List<FoliageData> FoliagesData = new List<FoliageData>();
 
+    /// <summary>
+    /// Get the world bounds of the component (position and size)
+    /// </summary>
     public Bounds Bounds
     {
         get
         {
-            return new Bounds(ComponentPosition, new Vector3(25f, 25f, 25f));
+            return new Bounds(GridCoordinate * Size, new Vector3(Size, Size, Size));
         }
     }
 
-    public FTComponentData(Vector3 componentPosition)
+    public FTComponentData(Vector3 gridCoordinate)
     {
         ID = Guid.NewGuid().ToString("N");
-        ComponentPosition = componentPosition;
+        GridCoordinate = gridCoordinate;
     }
 
     /// <summary>

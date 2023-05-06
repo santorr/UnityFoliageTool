@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.ComponentModel;
 using UnityEngine;
 
 [ExecuteAlways]
@@ -9,44 +8,53 @@ public class FTManager : MonoBehaviour
     public FTSceneData SceneData;
     private List<FTComponent> Components = new List<FTComponent>();
 
+    /// <summary>
+    /// Listen for events coming from scene data and initialize the manager.
+    /// </summary>
     private void OnEnable()
     {
-        FTUtils.Message(IsDebug, this, "Enabled");
-
         if (!Application.isPlaying)
         {
             FTSceneData.OnComponentDataCreated += CreateComponent;
             FTSceneData.OnComponentDataUpdated += UpdateComponent;
-            FTSceneData.OnComponentDataDeleted += DeleteComponent;
+            FTSceneData.OnComponentDataDeleted += DestroyComponent;
         }
         Initialize();
     }
 
+    /// <summary>
+    /// Remove all listening and destroy all components.
+    /// </summary>
     private void OnDisable()
     {
         FTUtils.Message(IsDebug, this, "Disabled");
 
         FTSceneData.OnComponentDataCreated -= CreateComponent;
         FTSceneData.OnComponentDataUpdated -= UpdateComponent;
-        FTSceneData.OnComponentDataDeleted -= DeleteComponent;
+        FTSceneData.OnComponentDataDeleted -= DestroyComponent;
 
-        DestroyComponents();
+        DestroyAllComponents();
+
+        return;
     }
 
-    // From FTSceneData create components
+    /// <summary>
+    /// Initialize the manager, destroy all components and create new ones.
+    /// </summary>
     private void Initialize()
     {
         FTUtils.Message(IsDebug, this, "Initialize");
 
-        DestroyComponents();
+        DestroyAllComponents();
 
-        // Loop over all components
-        for (int i=0; i<SceneData.ComponentsData.Count; i++)
-        {
-            CreateComponent(SceneData.ComponentsData[i]);
-        }
+        SceneData.ComponentsData.ForEach(componentData => CreateComponent(componentData));
+
+        return;
     }
 
+    /// <summary>
+    /// Draw instances
+    /// </summary>
     private void Update()
     {
         for (int i = 0; i < Components.Count; i++)
@@ -57,17 +65,23 @@ public class FTManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Create a new component with component data
+    /// </summary>
+    /// <param name="componentData"></param>
     private void CreateComponent(FTComponentData componentData)
     {
-        FTComponent newComponent = new FTComponent(
-            id: componentData.ID,
-            worldPosition: componentData.ComponentPosition,
-            size: SceneData.ComponentSize,
-            data: componentData
-            );
+        FTComponent newComponent = new FTComponent( id: componentData.ID, bounds: componentData.Bounds, componentData: componentData);
+
         Components.Add(newComponent);
+
+        return;
     }
 
+    /// <summary>
+    /// Upodate component instances from new component data
+    /// </summary>
+    /// <param name="componentData"></param>
     public void UpdateComponent(FTComponentData componentData)
     {
         FTComponent component = GetComponentFromID(componentData.ID);
@@ -79,8 +93,21 @@ public class FTManager : MonoBehaviour
         return;
     }
 
-    // Delete a component, clear his instances and remove from components list
-    public void DeleteComponent(string componentID)
+    /// <summary>
+    /// Get a component from ID
+    /// </summary>
+    /// <param name="componentID"></param>
+    /// <returns></returns>
+    private FTComponent GetComponentFromID(string componentID)
+    {
+        return Components.Find(component => component.ID == componentID);
+    }
+
+    /// <summary>
+    /// Delete a component from ID
+    /// </summary>
+    /// <param name="componentID"></param>
+    public void DestroyComponent(string componentID)
     {
         FTComponent component = GetComponentFromID(componentID);
 
@@ -92,37 +119,37 @@ public class FTManager : MonoBehaviour
         return;
     }
 
-    // Return a component corresponding to ID
-    private FTComponent GetComponentFromID(string componentID)
-    {
-        return Components.Find(component => component.ID == componentID);
-    }
-
-    // Clear references to components
-    private void DestroyComponents()
+    /// <summary>
+    /// Destroy all components
+    /// </summary>
+    private void DestroyAllComponents()
     {
         for (int i=0; i<Components.Count; i++)
         {
-            if (Components[i] != null)
-            {
-                Components[i].ClearAllInstances();
-                Components[i] = null;
-            }
+            if (Components[i] == null) continue;
+
+            Components[i].ClearAllInstances();
         }
+
         Components.Clear();
+
+        return;
     }
 
-    // Draw debug gizmos on each chunks
+    /// <summary>
+    /// Draw debug gizmos
+    /// </summary>
     private void OnDrawGizmos()
     {
-        if (IsDebug)
-        {
-            Gizmos.color = new Color(0.27f, 0.38f, 0.49f, 0.3f);
+        if (!IsDebug) return;
 
-            for (int i = 0; i < Components.Count; i++)
-            {
-                Gizmos.DrawCube(Components[i].Bounds.center, Components[i].Bounds.size);
-            }
+        Gizmos.color = new Color(0f, 0.75f, 1f, 1f);
+
+        for (int i = 0; i < Components.Count; i++)
+        {
+            Gizmos.DrawWireCube(Components[i].Bounds.center, Components[i].Bounds.size);
         }
+
+        return;
     }
 }

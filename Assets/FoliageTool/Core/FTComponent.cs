@@ -2,19 +2,18 @@ using UnityEngine;
 
 public class FTComponent
 {
-    private bool isDebug = false;
     public string ID { get; private set; }
     public Bounds Bounds { get; private set; }
 
     public GPUInstanceMesh[] Instances = new GPUInstanceMesh[0];
 
     // Constructor
-    public FTComponent(string id, Vector3 worldPosition, int size, FTComponentData data)
+    public FTComponent(string id, Bounds bounds, FTComponentData componentData)
     {
         ID = id;
-        Bounds = new Bounds(worldPosition, new Vector3(size, size, size));
+        Bounds = bounds;
 
-        CreateInstances(data);
+        CreateInstances(componentData);
     }
 
     // Create all instances based on component data
@@ -28,11 +27,7 @@ public class FTComponent
         // Loop over data to create instances
         for (int i = 0; i < data.FoliagesData.Count; i++)
         {
-            Instances[i] = new GPUInstanceMesh(
-                foliageType: data.FoliagesData[i].FoliageType, 
-                matrix: data.FoliagesData[i].Matrice.ToArray(), 
-                bounds: Bounds
-                );
+            Instances[i] = new GPUInstanceMesh(foliageType: data.FoliagesData[i].FoliageType, matrix: data.FoliagesData[i].Matrice.ToArray(), bounds: Bounds);
         }
     }
 

@@ -526,7 +526,7 @@ public class FTPaint : EditorWindow
                 float randomZ = Random.Range(-Brush.Disorder, Brush.Disorder);
 
                 Vector3 pointOffset = new Vector3((i * distance + randomX) - 12.5f, 12.5f, (j * distance + randomZ) - 12.5f);
-                Vector3 point = activeComponent.ComponentPosition + pointOffset;
+                Vector3 point = activeComponent.Bounds.center + pointOffset;
 
                 RaycastHit hit;
                 if (Physics.Raycast(point, Vector3.down, out hit, Mathf.Infinity, SelectedFoliageType.LayerMask))
@@ -547,10 +547,7 @@ public class FTPaint : EditorWindow
         // Check component at position
         FTComponentData activeComponent = ComponentsManager.SceneData.GetComponentDataAtPosition(Brush.Position);
 
-        if (activeComponent == null)
-        {
-            return;
-        }
+        if (activeComponent == null) return;
 
         ComponentsManager.SceneData.RemoveFoliageDataInComponentData(componentData: activeComponent, SelectedFoliageType);
         EditorUtility.SetDirty(ComponentsManager.SceneData);
