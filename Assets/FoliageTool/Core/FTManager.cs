@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.ComponentModel;
 using UnityEngine;
 
 [ExecuteAlways]
@@ -50,7 +51,8 @@ public class FTManager : MonoBehaviour
     {
         for (int i = 0; i < Components.Count; i++)
         {
-            float distanceFromCamera = Vector3.Distance(Camera.main.transform.position, Components[i].Bounds.center);
+            float distanceFromCamera = Application.isPlaying ? Vector3.Distance(Camera.main.transform.position, Components[i].Bounds.center) : 0f;
+
             Components[i].DrawInstances(distanceFromCamera: distanceFromCamera);
         }
     }
@@ -68,27 +70,32 @@ public class FTManager : MonoBehaviour
 
     public void UpdateComponent(FTComponentData componentData)
     {
-        for (int i=0; i<Components.Count; i++)
-        {
-            if (Components[i].ID == componentData.ID)
-            {
-                Components[i].UpdateInstances(componentData);
-                return;
-            }
-        }
+        FTComponent component = GetComponentFromID(componentData.ID);
+
+        if (component == null) return;
+
+        component.UpdateInstances(componentData);
+
+        return;
     }
 
+    // Delete a component, clear his instances and remove from components list
     public void DeleteComponent(string componentID)
     {
-        for (int i = 0; i < Components.Count; i++)
-        {
-            if (Components[i].ID == componentID)
-            {
-                Components[i].ClearAllInstances();
-                Components.Remove(Components[i]);
-                return;
-            }
-        }
+        FTComponent component = GetComponentFromID(componentID);
+
+        if (component == null) return;
+
+        component.ClearAllInstances();
+        Components.Remove(component);
+
+        return;
+    }
+
+    // Return a component corresponding to ID
+    private FTComponent GetComponentFromID(string componentID)
+    {
+        return Components.Find(component => component.ID == componentID);
     }
 
     // Clear references to components
@@ -110,11 +117,11 @@ public class FTManager : MonoBehaviour
     {
         if (IsDebug)
         {
-            Gizmos.color = new Color(0.27f, 0.38f, 0.49f, 1);
+            Gizmos.color = new Color(0.27f, 0.38f, 0.49f, 0.3f);
 
             for (int i = 0; i < Components.Count; i++)
             {
-                Gizmos.DrawWireCube(Components[i].Bounds.center, Components[i].Bounds.size);
+                Gizmos.DrawCube(Components[i].Bounds.center, Components[i].Bounds.size);
             }
         }
     }

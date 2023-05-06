@@ -117,7 +117,7 @@ Material:
     m_Floats:
     - PROCEDURAL_INSTANCING: 1
     - _Alpha_cutout: 1
-    - _Ambient_occlusion_intensity: 0.75
+    - _Ambient_occlusion_intensity: 1
     - _BumpScale: 1
     - _CullingAngle: 180
     - _CullingDistance: 100
@@ -133,7 +133,7 @@ Material:
     - _Metallic: 0
     - _Mode: 0
     - _NormalIntensity: 3
-    - _Normal_intensity: 1
+    - _Normal_intensity: 2
     - _OcclusionStrength: 1
     - _Parallax: 0.02
     - _QueueControl: 0

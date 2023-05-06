@@ -7,6 +7,7 @@ using System.IO;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
 using System.Threading.Tasks;
+using UnityEngine.UIElements;
 
 public class FTPaint : EditorWindow
 {
@@ -442,6 +443,35 @@ public class FTPaint : EditorWindow
     // Find the SelectedFoliageType from his ID in the FoliageData and loop over all matrix to compare distance from brush center, remove them if distance is less than radius
     private void Erase()
     {
+        // Get all components around position
+        FTComponentData[] components = ComponentsManager.SceneData.GetClosestComponentsData(Brush.Position);
+
+        // Loop over all components
+        for (int i=0; i< components.Length; i++)
+        {
+            // Get the foliage data in the current component
+            FTComponentData.FoliageData foliageToRemove = components[i].GetFoliageDataFromFoliageType(SelectedFoliageType);
+
+            if (foliageToRemove == null)
+            {
+                continue;
+            }
+
+            for (int j = 0; j < foliageToRemove.Matrice.Count; j++)
+            {
+                if (Vector3.Distance(Brush.Position, foliageToRemove.GetInstancePosition(j)) < Brush.Radius)
+                {
+                    foliageToRemove.Matrice.RemoveAt(j);
+                }
+            }
+
+            ComponentsManager.SceneData.CleanComponent(components[i]);
+            ComponentsManager.UpdateComponent(components[i]);
+        }
+
+        EditorUtility.SetDirty(ComponentsManager.SceneData);
+
+        /*
         FTComponentData activeComponentData = ComponentsManager.SceneData.GetComponentDataAtPosition(Brush.Position);
 
         if (activeComponentData == null)
@@ -468,76 +498,62 @@ public class FTPaint : EditorWindow
         ComponentsManager.UpdateComponent(activeComponentData);
 
         EditorUtility.SetDirty(ComponentsManager.SceneData);
+        */
     }
 
     // ...
     private void Fill()
     {
-        Ray ray = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
-        RaycastHit hit;
+        // Check component at position
+        FTComponentData activeComponent = ComponentsManager.SceneData.GetComponentDataAtPosition(Brush.Position);
 
-        if (Physics.Raycast(ray, out hit, Mathf.Infinity, SelectedFoliageType.LayerMask))
+        if (activeComponent == null)
         {
-            Brush.Display = true;
-            Brush.Position = hit.point;
-            Brush.Normal = hit.normal.normalized;
+            activeComponent = ComponentsManager.SceneData.AddComponentData(Brush.Position);
+        }
 
-            // Check component at position
-            FTComponentData activeComponent = ComponentsManager.SceneData.GetComponentDataAtPosition(Brush.Position);
-
-            if (activeComponent == null)
+        // On lance des rayon en grille dans le component pour faire spawn le foliage
+        int numRows = Mathf.CeilToInt(Mathf.Sqrt((25f * 25f) * Brush.Density));
+        // Calculate the distance between each points
+        float distance = (25f) / numRows;
+        // Create a grid of points in the brush area based on density per square metter, radius and disorder parameters
+        for (int i = 0; i < numRows; i++)
+        {
+            for (int j = 0; j < numRows; j++)
             {
-                activeComponent = ComponentsManager.SceneData.AddComponentData(FTUtils.TransformWorldToGrid(Brush.Position));
-            }
+                // Start ray position
+                float randomX = Random.Range(-Brush.Disorder, Brush.Disorder);
+                float randomZ = Random.Range(-Brush.Disorder, Brush.Disorder);
 
-            // On lance des rayon en grille dans le component pour faire spawn le foliage
-            int numRows = Mathf.CeilToInt(Mathf.Sqrt((25f * 25f) * Brush.Density));
-            // Calculate the distance between each points
-            float distance = (25f) / numRows;
-            // Create a grid of points in the brush area based on density per square metter, radius and disorder parameters
-            for (int i = 0; i < numRows; i++)
-            {
-                for (int j = 0; j < numRows; j++)
+                Vector3 pointOffset = new Vector3((i * distance + randomX) - 12.5f, 12.5f, (j * distance + randomZ) - 12.5f);
+                Vector3 point = activeComponent.ComponentPosition + pointOffset;
+
+                RaycastHit hit;
+                if (Physics.Raycast(point, Vector3.down, out hit, Mathf.Infinity, SelectedFoliageType.LayerMask))
                 {
-                    // Start ray position
-                    float randomX = Random.Range(-Brush.Disorder, Brush.Disorder);
-                    float randomZ = Random.Range(-Brush.Disorder, Brush.Disorder);
-
-                    Vector3 pointOffset = new Vector3((i * distance + randomX) - 12.5f, 12.5f, (j * distance + randomZ) - 12.5f);
-                    Vector3 point = activeComponent.ComponentPosition + pointOffset;
-
-                    RaycastHit temp;
-                    if (Physics.Raycast(point, Vector3.down, out temp, Mathf.Infinity, SelectedFoliageType.LayerMask))
+                    if (activeComponent.Bounds.Contains(hit.point))
                     {
-                        Matrix4x4 matrice = CalculateMatrix(temp.point, temp.normal);
+                        Matrix4x4 matrice = CalculateMatrix(hit.point, hit.normal);
                         ComponentsManager.SceneData.AddFoliage(SelectedFoliageType, matrice);
                     }
                 }
             }
         }
+        EditorUtility.SetDirty(ComponentsManager.SceneData);
     }
 
     private void EraseFill()
     {
-        Ray ray = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
-        RaycastHit hit;
+        // Check component at position
+        FTComponentData activeComponent = ComponentsManager.SceneData.GetComponentDataAtPosition(Brush.Position);
 
-        if (Physics.Raycast(ray, out hit, Mathf.Infinity, SelectedFoliageType.LayerMask))
+        if (activeComponent == null)
         {
-            Brush.Display = true;
-            Brush.Position = hit.point;
-            Brush.Normal = hit.normal.normalized;
-
-            // Check component at position
-            FTComponentData activeComponent = ComponentsManager.SceneData.GetComponentDataAtPosition(Brush.Position);
-
-            if (activeComponent == null)
-            {
-                activeComponent = ComponentsManager.SceneData.AddComponentData(FTUtils.TransformWorldToGrid(Brush.Position));
-            }
-
-            ComponentsManager.SceneData.RemoveFoliageData(componentData: activeComponent, SelectedFoliageType);
+            return;
         }
+
+        ComponentsManager.SceneData.RemoveFoliageDataInComponentData(componentData: activeComponent, SelectedFoliageType);
+        EditorUtility.SetDirty(ComponentsManager.SceneData);
     }
 
     private Matrix4x4 CalculateMatrix(Vector3 position, Vector3 normal)
