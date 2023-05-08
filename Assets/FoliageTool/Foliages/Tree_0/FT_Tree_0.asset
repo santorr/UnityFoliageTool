@@ -19,8 +19,10 @@ MonoBehaviour:
   CullingDistance: 100
   RenderShadows: 1
   ReceiveShadows: 1
-  AlignToNormal: 1
+  AlignToNormal: 0
   RandomRotation: 1
+  DensityPerSquareMeter: 0.01
+  Disorder: 4
   Offset: 0
   MinimumScale: 0.96610165
   MaximumScale: 1.5

@@ -20,6 +20,10 @@ public class FoliageType : ScriptableObject
     public bool AlignToNormal = false;
     public bool RandomRotation = true;
 
+    [Header("Painting")]
+    [Min(0)] public float DensityPerSquareMeter = 5.5f;
+    [Min(0)] public float Disorder = 0.1f;
+    
     [Header("Position")]
     public float Offset = 0;
 

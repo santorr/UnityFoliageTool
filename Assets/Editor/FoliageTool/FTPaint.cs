@@ -7,7 +7,7 @@ using System.IO;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
 using System.Threading.Tasks;
-using UnityEngine.UIElements;
+using Unity.VisualScripting;
 
 public class FTPaint : EditorWindow
 {
@@ -170,22 +170,6 @@ public class FTPaint : EditorWindow
         GUILayout.Label(Brush.Size.ToString("F1"), GUILayout.Width(50));
         GUILayout.EndHorizontal();
         GUILayout.Space(5);
-
-        // Density parameter
-        GUILayout.BeginHorizontal();
-        GUILayout.Label(new GUIContent("Brush density (/m2)", "Ctrl + Scroll ctrl"), FTStyles.Label, GUILayout.Width(150));
-        Brush.Density = (float)GUILayout.HorizontalSlider(Brush.Density, Brush.MinDensity, Brush.MaxDensity);
-        GUILayout.Label(Brush.Density.ToString("F2"), GUILayout.Width(50));
-        GUILayout.EndHorizontal();
-        GUILayout.Space(5);
-
-        // Disorder parameter
-        GUILayout.BeginHorizontal();
-        GUILayout.Label(new GUIContent("Brush disorder", "Alt + Scroll ctrl"), FTStyles.Label, GUILayout.Width(150));
-        Brush.Disorder = (float)GUILayout.HorizontalSlider(Brush.Disorder, Brush.MinDisorder, Brush.MaxDisorder);
-        GUILayout.Label(Brush.Disorder.ToString("F2"), GUILayout.Width(50));
-        GUILayout.EndHorizontal();
-        GUILayout.Space(5);
         #endregion
 
         #region FOLIAGE TYPES
@@ -233,62 +217,22 @@ public class FTPaint : EditorWindow
         Event e = Event.current;
         int controlId = GUIUtility.GetControlID(GetHashCode(), FocusType.Passive);
 
+        // If scroll whell + alt = increase/decrease brush size
+        if (e.type == EventType.ScrollWheel && e.shift)
+        {
+            e.Use();
+
+            float delta = Mathf.Sign(e.delta.y) * -0.5f;
+
+            Brush.Size += delta;
+
+            Repaint();
+        }
+
         // If Paint or erase mode
         if (PaintMode == EPaintMode.Paint)
         {
-            // If scroll whell + alt = increase/decrease brush size
-            if (e.type == EventType.ScrollWheel && e.shift)
-            {
-                e.Use();
 
-                float delta = 0.5f;
-
-                if (e.delta.y > 0)
-                {
-                    Brush.Size -= delta;
-                }
-                else
-                {
-                    Brush.Size += delta;
-                }
-                Repaint();
-            }
-
-            // If scroll whell + shift = increase/decrease brush density
-            if (e.type == EventType.ScrollWheel && e.control)
-            {
-                e.Use();
-
-                float delta = 0.5f;
-
-                if (e.delta.y > 0)
-                {
-                    Brush.Density -= delta;
-                }
-                else
-                {
-                    Brush.Density += delta;
-                }
-                Repaint();
-            }
-
-            // If scroll whell + shift = increase/decrease brush disorder
-            if (e.type == EventType.ScrollWheel && e.alt)
-            {
-                e.Use();
-
-                float delta = 0.1f;
-
-                if (e.delta.y > 0)
-                {
-                    Brush.Disorder -= delta;
-                }
-                else
-                {
-                    Brush.Disorder += delta;
-                }
-                Repaint();
-            }
 
             InvertPaintMode = e.shift ? true : false;
 
@@ -368,12 +312,24 @@ public class FTPaint : EditorWindow
         // Random scale
         GUILayout.BeginHorizontal();
         GUILayout.Label("Random scale", FTStyles.Label, GUILayout.Width(150));
-
         EditorGUILayout.LabelField("", SelectedFoliageType.MinimumScale.ToString("F1"), FTStyles.MinMaxLabel, GUILayout.Width(40));
         EditorGUILayout.MinMaxSlider(ref SelectedFoliageType.MinimumScale, ref SelectedFoliageType.MaximumScale, 0, 10);
         EditorGUILayout.LabelField("", SelectedFoliageType.MaximumScale.ToString("F1"), FTStyles.MinMaxLabel, GUILayout.Width(40));
-
         GUILayout.EndHorizontal();
+        GUILayout.Space(5);
+        // Density per square meter
+        GUILayout.BeginHorizontal();
+        GUILayout.Label(new GUIContent("Density (/m2)"), FTStyles.Label, GUILayout.Width(150));
+        SelectedFoliageType.DensityPerSquareMeter = EditorGUILayout.FloatField(SelectedFoliageType.DensityPerSquareMeter);
+        GUILayout.EndHorizontal();
+        GUILayout.Space(5);
+        // Disorder
+        GUILayout.BeginHorizontal();
+        GUILayout.Label(new GUIContent("Disorder"), FTStyles.Label, GUILayout.Width(150));
+        SelectedFoliageType.Disorder = EditorGUILayout.FloatField(SelectedFoliageType.Disorder);
+        GUILayout.EndHorizontal();
+
+
         #endregion
         GUILayout.Space(5);
         #region Placement area
@@ -415,11 +371,13 @@ public class FTPaint : EditorWindow
         #endregion
 
         GUILayout.EndScrollView();
+
+        EditorUtility.SetDirty(SelectedFoliageType);
     }
 
     private void Paint()
     {
-        Vector3[] points = Brush.GetPoints();
+        Vector3[] points = Brush.GetPoints(density: SelectedFoliageType.DensityPerSquareMeter, disorder: SelectedFoliageType.Disorder);
 
         // Pour chacun des points du brush on lance un rayon qui va tester les collisions
         for (int i = 0; i < points.Length; i++)
@@ -481,7 +439,7 @@ public class FTPaint : EditorWindow
         }
 
         // On lance des rayon en grille dans le component pour faire spawn le foliage
-        int numRows = Mathf.CeilToInt(Mathf.Sqrt((25f * 25f) * Brush.Density));
+        int numRows = Mathf.CeilToInt(Mathf.Sqrt((25f * 25f) * SelectedFoliageType.DensityPerSquareMeter));
         // Calculate the distance between each points
         float distance = (25f) / numRows;
         // Create a grid of points in the brush area based on density per square metter, radius and disorder parameters
@@ -490,8 +448,8 @@ public class FTPaint : EditorWindow
             for (int j = 0; j < numRows; j++)
             {
                 // Start ray position
-                float randomX = Random.Range(-Brush.Disorder, Brush.Disorder);
-                float randomZ = Random.Range(-Brush.Disorder, Brush.Disorder);
+                float randomX = Random.Range(-SelectedFoliageType.Disorder, SelectedFoliageType.Disorder);
+                float randomZ = Random.Range(-SelectedFoliageType.Disorder, SelectedFoliageType.Disorder);
 
                 Vector3 pointOffset = new Vector3((i * distance + randomX) - 12.5f, 12.5f, (j * distance + randomZ) - 12.5f);
                 Vector3 point = activeComponent.Bounds.center + pointOffset;
@@ -569,7 +527,6 @@ public class FTPaint : EditorWindow
                     else
                     {
                         Brush.DrawCircles(colorPreset: Brush.PaintPreset);
-                        Brush.DrawPoints();
                     }
                     break;
                 case EPaintMode.Fill:
@@ -675,12 +632,6 @@ public class FTPaint : EditorWindow
     {
         // Save brush size
         EditorPrefs.SetFloat("BrushSize", Brush.Size);
-
-        // Save brush density
-        EditorPrefs.SetFloat("BrushDensity", Brush.Density);
-
-        // Save brush disorder
-        EditorPrefs.SetFloat("BrushDisorder", Brush.Disorder);
     }
 
     // Load parameters on enable tool
@@ -695,24 +646,6 @@ public class FTPaint : EditorWindow
         {
             EditorPrefs.SetFloat("BrushSize", Brush.Size);
         }
-        // Load brush density
-        if (EditorPrefs.HasKey("BrushDensity"))
-        {
-            Brush.Density = EditorPrefs.GetFloat("BrushDensity");
-        }
-        else
-        {
-            EditorPrefs.SetFloat("BrushDensity", Brush.Density);
-        }
-        // Load brush disorder
-        if (EditorPrefs.HasKey("BrushDisorder"))
-        {
-            Brush.Disorder = EditorPrefs.GetFloat("BrushDisorder");
-        }
-        else
-        {
-            EditorPrefs.SetFloat("BrushDisorder", Brush.Disorder);
-        }
     }
 }
 
@@ -726,16 +659,6 @@ public class FTBrush
     private float _size = 2f;
     public float MinSize { get; private set; } = 0.5f;
     public float MaxSize { get; private set; } = 10f;
-
-    // Density per square meter
-    private float _density = 5f;
-    public float MinDensity { get; private set; } = 0f;
-    public float MaxDensity { get; private set; } = 20f;
-
-    // Disorder to create some random
-    private float _disorder = 0;
-    public float MinDisorder { get; private set; } = 0f;
-    public float MaxDisorder { get; private set; } = 2f;
 
     public float DebugLinePointSize { get; private set; } = 0.3f;
 
@@ -754,20 +677,6 @@ public class FTBrush
     {
         get { return _size; }
         set { _size = Mathf.Clamp(value, MinSize, MaxSize); }
-    }
-
-    // Getter | Setter : Density
-    public float Density
-    {
-        get { return _density; }
-        set { _density = Mathf.Clamp(value, MinDensity, MaxDensity); }
-    }
-
-    // Getter | Setter : Disorder
-    public float Disorder
-    {
-        get { return _disorder; }
-        set { _disorder = Mathf.Clamp(value, MinDisorder, MaxDisorder); }
     }
 
     // Getter | Setter : Radius
@@ -820,22 +729,12 @@ public class FTBrush
 
     }
 
-    // Draw lines to represent spawn points for foliage types
-    public void DrawPoints()
-    {
-        Vector3[] paintPoints = GetPoints();
-        for (int i = 0; i < paintPoints.Length; i++)
-        {
-            Handles.DrawLine(paintPoints[i], paintPoints[i] + Normal * DebugLinePointSize, 3f);
-        }
-    }
-
     // A sunflower algorythm to draw lines for foliage types spawning
-    private Vector3[] SunflowerAlgorythm()
+    private Vector3[] SunflowerAlgorythm(float density, float disorder)
     {
         Quaternion rotation = Quaternion.FromToRotation(Vector3.up, Normal);
 
-        int pointNumbers = (int)(BrushArea * Density);
+        int pointNumbers = (int)(BrushArea * density);
         Vector3[] points = new Vector3[pointNumbers];
 
         float alpha = 2f;
@@ -844,8 +743,8 @@ public class FTBrush
 
         for (int i = 0; i < pointNumbers; i++)
         {
-            float randomX = Random.Range(-Disorder, Disorder);
-            float randomZ = Random.Range(-Disorder, Disorder);
+            float randomX = Random.Range(-disorder, disorder);
+            float randomZ = Random.Range(-disorder, disorder);
 
             float r = SunFlowerRadius(i, pointNumbers, b);
             float theta = 2f * Mathf.PI * i / Mathf.Pow(phi, 2f);
@@ -865,11 +764,11 @@ public class FTBrush
     }
 
     // A grid algorythm to draw lines for foliage types spawning
-    private Vector3[] GridAlgorythm()
+    private Vector3[] GridAlgorythm(float density, float disorder)
     {
         List<Vector3> points = new List<Vector3>();
         // Calculate the number of rows and columns
-        int numRows = Mathf.CeilToInt(Mathf.Sqrt(BrushArea * Density));
+        int numRows = Mathf.CeilToInt(Mathf.Sqrt(BrushArea * density));
         // Calculate the distance between each points
         float distance = (Size) / numRows;
         Quaternion rotation = Quaternion.FromToRotation(Vector3.up, Normal);
@@ -879,8 +778,8 @@ public class FTBrush
             for (int j = 0; j < numRows; j++)
             {
                 // Randomize offset from disorder parameter
-                float randomX = Random.Range(-Disorder, Disorder);
-                float randomZ = Random.Range(-Disorder, Disorder);
+                float randomX = Random.Range(-disorder, disorder);
+                float randomZ = Random.Range(-disorder, disorder);
 
                 Vector3 pointOffset = new Vector3((i * distance + randomX) - Radius, 0f, (j * distance + randomZ) - Radius);
                 Vector3 point = Position + rotation * pointOffset;
@@ -913,9 +812,9 @@ public class FTBrush
         }
     }
 
-    public Vector3[] GetPoints()
+    public Vector3[] GetPoints(float density, float disorder)
     {
-        return SunflowerAlgorythm();
+        return SunflowerAlgorythm(density: density, disorder: disorder);
         // return GridAlgorythm();
     }
 

@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 [ExecuteAlways]
 public class FTManager : MonoBehaviour
@@ -143,11 +145,12 @@ public class FTManager : MonoBehaviour
     {
         if (!IsDebug) return;
 
-        Gizmos.color = new Color(0f, 0.75f, 1f, 1f);
+        Handles.zTest = CompareFunction.LessEqual;
+        Handles.color = new Color(0f, 0.75f, 1f, 1f);
 
         for (int i = 0; i < Components.Count; i++)
         {
-            Gizmos.DrawWireCube(Components[i].Bounds.center, Components[i].Bounds.size);
+            Handles.DrawWireCube(Components[i].Bounds.center, Components[i].Bounds.size);
         }
 
         return;
