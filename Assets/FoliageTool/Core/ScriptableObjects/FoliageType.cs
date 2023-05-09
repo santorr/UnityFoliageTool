@@ -21,8 +21,8 @@ public class FoliageType : ScriptableObject
     public bool RandomRotation = true;
 
     [Header("Painting")]
-    [Min(0)] public float DensityPerSquareMeter = 5.5f;
-    [Min(0)] public float Disorder = 0.1f;
+    [SerializeField] float _density = 5.5f;
+    [SerializeField] float _disorder = 0.1f;
     
     [Header("Position")]
     public float Offset = 0;
@@ -30,6 +30,18 @@ public class FoliageType : ScriptableObject
     [Header("Scale")]
     public float MinimumScale = 0.75f;
     public float MaximumScale = 1f;
+
+    public float Density
+    {
+        get { return _density; }
+        set { _density = Mathf.Max(value, 0); }
+    }
+
+    public float Disorder
+    {
+        get { return _disorder; }
+        set { _disorder = Mathf.Max(value, 0); }
+    }
 
     public string GetID
     {

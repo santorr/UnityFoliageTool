@@ -22,9 +22,7 @@ public class FTPaint : EditorWindow
         {
             // Simple label
             Label = new GUIStyle();
-            Label.fontSize = 12;
             Label.normal.textColor = new Color(0.85f, 0.85f, 0.85f, 1f);
-            // Label.fontStyle = FontStyle.Bold;
             Label.padding = new RectOffset(5, 5, 0, 0);
             Label.alignment = TextAnchor.MiddleLeft;
             Label.wordWrap = true;
@@ -184,9 +182,11 @@ public class FTPaint : EditorWindow
             Texture2D texture = AssetPreview.GetMiniThumbnail(foliageType);
             string name = foliageType.name;
 
-            foliageTypesGUI.Add(new GUIContent(name, texture, "Foliage type"));
+            GUIContent content = new GUIContent(name, texture, "Foliage type");
+
+            foliageTypesGUI.Add(content);
         }
-        SelectedIndex = GUILayout.SelectionGrid(SelectedIndex, foliageTypesGUI.ToArray(), numberColumn, GUILayout.Height(50));
+        SelectedIndex = GUILayout.SelectionGrid(SelectedIndex, foliageTypesGUI.ToArray(), numberColumn, GUILayout.Height(Mathf.CeilToInt(foliageTypesGUI.Count/2f) * 50f));
 
         GUILayout.EndScrollView();
         #endregion
@@ -319,14 +319,12 @@ public class FTPaint : EditorWindow
         GUILayout.Space(5);
         // Density per square meter
         GUILayout.BeginHorizontal();
-        GUILayout.Label(new GUIContent("Density (/m2)"), FTStyles.Label, GUILayout.Width(150));
-        SelectedFoliageType.DensityPerSquareMeter = EditorGUILayout.FloatField(SelectedFoliageType.DensityPerSquareMeter);
+        SelectedFoliageType.Density = EditorGUILayout.FloatField("Density (/m2)", SelectedFoliageType.Density);
         GUILayout.EndHorizontal();
         GUILayout.Space(5);
         // Disorder
         GUILayout.BeginHorizontal();
-        GUILayout.Label(new GUIContent("Disorder"), FTStyles.Label, GUILayout.Width(150));
-        SelectedFoliageType.Disorder = EditorGUILayout.FloatField(SelectedFoliageType.Disorder);
+        SelectedFoliageType.Disorder = EditorGUILayout.FloatField("Disorder", SelectedFoliageType.Disorder);
         GUILayout.EndHorizontal();
 
 
@@ -349,8 +347,7 @@ public class FTPaint : EditorWindow
         GUILayout.Space(5);
         // Add offset
         GUILayout.BeginHorizontal();
-        GUILayout.Label("Z offset", FTStyles.Label, GUILayout.Width(150));
-        SelectedFoliageType.Offset = EditorGUILayout.FloatField(SelectedFoliageType.Offset);
+        SelectedFoliageType.Offset = EditorGUILayout.FloatField("Z offset", SelectedFoliageType.Offset);
         GUILayout.EndHorizontal();
         #endregion
         GUILayout.Space(5);
@@ -377,7 +374,7 @@ public class FTPaint : EditorWindow
 
     private void Paint()
     {
-        Vector3[] points = Brush.GetPoints(density: SelectedFoliageType.DensityPerSquareMeter, disorder: SelectedFoliageType.Disorder);
+        Vector3[] points = Brush.GetPoints(density: SelectedFoliageType.Density, disorder: SelectedFoliageType.Disorder);
 
         // Pour chacun des points du brush on lance un rayon qui va tester les collisions
         for (int i = 0; i < points.Length; i++)
@@ -439,7 +436,7 @@ public class FTPaint : EditorWindow
         }
 
         // On lance des rayon en grille dans le component pour faire spawn le foliage
-        int numRows = Mathf.CeilToInt(Mathf.Sqrt((25f * 25f) * SelectedFoliageType.DensityPerSquareMeter));
+        int numRows = Mathf.CeilToInt(Mathf.Sqrt((25f * 25f) * SelectedFoliageType.Density));
         // Calculate the distance between each points
         float distance = (25f) / numRows;
         // Create a grid of points in the brush area based on density per square metter, radius and disorder parameters

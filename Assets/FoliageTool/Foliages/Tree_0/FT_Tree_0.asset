@@ -21,8 +21,8 @@ MonoBehaviour:
   ReceiveShadows: 1
   AlignToNormal: 0
   RandomRotation: 1
-  DensityPerSquareMeter: 0.01
-  Disorder: 4
+  _density: 0.005
+  _disorder: 4.14
   Offset: 0
   MinimumScale: 0.96610165
   MaximumScale: 1.5

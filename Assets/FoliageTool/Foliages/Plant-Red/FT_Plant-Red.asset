@@ -18,9 +18,11 @@ MonoBehaviour:
     m_Bits: 8
   CullingDistance: 50
   RenderShadows: 0
-  ReceiveShadows: 0
+  ReceiveShadows: 1
   AlignToNormal: 1
   RandomRotation: 1
+  _density: 5.5
+  _disorder: 0.1
   Offset: 0
   MinimumScale: 0.8055556
   MaximumScale: 1.4999999
