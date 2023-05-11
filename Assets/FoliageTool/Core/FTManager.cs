@@ -49,6 +49,8 @@ public class FTManager : MonoBehaviour
 
         DestroyAllComponents();
 
+        if (SceneData == null) return;
+
         SceneData.ComponentsData.ForEach(componentData => CreateComponent(componentData));
 
         return;

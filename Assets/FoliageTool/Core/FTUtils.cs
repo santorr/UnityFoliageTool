@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public static class FTUtils
@@ -74,5 +75,53 @@ public static class FTUtils
         if (isGridCoordinate) return gridCoordinate;
 
         return gridCoordinate * gridSize;
+    }
+
+    /// <summary>
+    /// Generate points in a grid x,y based on bounds.
+    /// </summary>
+    /// <param name="bounds"></param>
+    /// <param name="density"></param>
+    /// <param name="disorder"></param>
+    /// <param name="keepOutOfZone"></param>
+    /// <returns></returns>
+    public static Vector3[] GetGridPoints(Bounds bounds, float density, float disorder, bool keepOutOfZone = true)
+    {
+        Vector3 center = bounds.center;
+        float width = bounds.size.x;
+        float height = bounds.size.z;
+
+        List<Vector3> points = new List<Vector3>();
+
+        int numWidthPoints = Mathf.CeilToInt(width * density);
+        float widthDistance = width / numWidthPoints;
+
+        int numHeightPoints = Mathf.CeilToInt(height * density);
+        float heightDistance = height / numHeightPoints;
+
+        for (int i=0; i< numWidthPoints; i++)
+        {
+            for (int j=0; j<numHeightPoints; j++)
+            {
+                Vector3 disorderOffset = new Vector3(Random.Range(-disorder, disorder), 0f, Random.Range(-disorder, disorder));
+
+                Vector3 pointOffset = new Vector3((i * widthDistance) - width/2, bounds.size.y / 2, (j * heightDistance) - height/2);
+
+                Vector3 point = center + pointOffset + disorderOffset;
+
+                if (!keepOutOfZone)
+                {
+                    if (point.x < center.x - width / 2 || 
+                        point.x > center.x + width / 2 ||
+                        point.z < center.z - height / 2 ||
+                        point.z > center.z + height / 2) 
+                        continue;
+                }
+
+                points.Add(point);
+            }
+        }
+
+        return points.ToArray();
     }
 }

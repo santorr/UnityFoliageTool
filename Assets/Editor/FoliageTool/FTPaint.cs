@@ -7,7 +7,9 @@ using System.IO;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
 using System.Threading.Tasks;
-using Unity.VisualScripting;
+using Unity.Collections;
+using Unity.Jobs;
+using System;
 
 public class FTPaint : EditorWindow
 {
@@ -36,16 +38,12 @@ public class FTPaint : EditorWindow
             MinMaxLabel.wordWrap = true;
 
             // Title
-            Title = new GUIStyle();
-            Title.normal = new GUIStyleState();
+            Title = new GUIStyle(GUI.skin.box);
+            Title.alignment = TextAnchor.MiddleLeft;
             Title.normal.textColor = new Color(0.85f, 0.85f, 0.85f);
             Title.fontStyle = FontStyle.Bold;
             Title.fontSize = 14;
             Title.padding = new RectOffset(5, 5, 5, 5);
-            Texture2D tex = new Texture2D(1, 1);
-            tex.SetPixel(0, 0, new Color(0.17f, 0.17f, 0.17f));
-            tex.Apply();
-            Title.normal.background = tex;
         }
     }
 
@@ -110,12 +108,6 @@ public class FTPaint : EditorWindow
         SceneView.duringSceneGui -= this.OnSceneGUI;
     }
 
-    // While tab is visible
-    private void Update()
-    {
-
-    }
-
     // While cursor move on tab
     private void OnGUI()
     {
@@ -137,12 +129,12 @@ public class FTPaint : EditorWindow
             GUILayout.Label("The 'FTSceneManager' has no input FTSceneData. It means you can't store foliage data. You can create it manually by right clicking in your content 'Create > Foliage > Data container'.\n" +
                 "Or drag and drop an existing FTSceneData if you already have for this scene.", FTStyles.Label);
 
-            _componentsManager.SceneData = (FTSceneData)EditorGUILayout.ObjectField(_componentsManager.SceneData, typeof(FTSceneData), false);
+            ComponentsManager.SceneData = (FTSceneData)EditorGUILayout.ObjectField(_componentsManager.SceneData, typeof(FTSceneData), false);
 
             GUILayout.Label("You can also create one by clicking on the button above. It will create a FTScene data at scene location in the content, make sure you don't have one because it will overwrite.", FTStyles.Label);
             if (GUILayout.Button("Create scene data", GUILayout.Height(30)))
             {
-                _componentsManager.SceneData = CreateSceneData();
+                ComponentsManager.SceneData = CreateSceneData();
             }
 
             return;
@@ -158,7 +150,7 @@ public class FTPaint : EditorWindow
         GUILayout.Space(5);
 
         #region BRUSH
-        GUILayout.Label("Brush", FTStyles.Title);
+        GUILayout.Box("Brush", FTStyles.Title, GUILayout.ExpandWidth(true));
         GUILayout.Space(5);
 
         // Size parameter
@@ -172,11 +164,12 @@ public class FTPaint : EditorWindow
 
         #region FOLIAGE TYPES
         int numberColumn = 2;
-        GUILayout.Label("Foliage types", FTStyles.Title);
+        GUILayout.Box("Foliage types", FTStyles.Title, GUILayout.ExpandWidth(true));
         GUILayout.Space(5);
         FoliageTypesScrollPosition = GUILayout.BeginScrollView(FoliageTypesScrollPosition, GUILayout.Height(200));
 
         List<GUIContent> foliageTypesGUI = new List<GUIContent>();
+
         foreach (FoliageType foliageType in FoliageTypes)
         {
             Texture2D texture = AssetPreview.GetMiniThumbnail(foliageType);
@@ -186,7 +179,7 @@ public class FTPaint : EditorWindow
 
             foliageTypesGUI.Add(content);
         }
-        SelectedIndex = GUILayout.SelectionGrid(SelectedIndex, foliageTypesGUI.ToArray(), numberColumn, GUILayout.Height(Mathf.CeilToInt(foliageTypesGUI.Count/2f) * 50f));
+        SelectedIndex = GUILayout.SelectionGrid(SelectedIndex, foliageTypesGUI.ToArray(), numberColumn, GUILayout.Height(Mathf.CeilToInt(foliageTypesGUI.Count/ (float)numberColumn) * 50f));
 
         GUILayout.EndScrollView();
         #endregion
@@ -282,15 +275,12 @@ public class FTPaint : EditorWindow
     private void GUISelectedFoliageProperties()
     {
         // If no foliage type selected, don't draw properties
-        if (SelectedFoliageType == null)
-        {
-            return;
-        }
+        if (SelectedFoliageType == null) return;
 
         ParametersScrollPosition = GUILayout.BeginScrollView(ParametersScrollPosition);
 
         #region Mesh area
-        GUILayout.Label("Mesh", FTStyles.Title);
+        GUILayout.Box("Mesh", FTStyles.Title, GUILayout.ExpandWidth(true));
         GUILayout.Space(5);
         GUILayout.BeginHorizontal();
         GUILayout.Label("Prefab", FTStyles.Label, GUILayout.Width(150));
@@ -299,7 +289,7 @@ public class FTPaint : EditorWindow
         #endregion
         GUILayout.Space(5);
         #region Painting area
-        GUILayout.Label("Painting", FTStyles.Title);
+        GUILayout.Box("Painting", FTStyles.Title, GUILayout.ExpandWidth(true));
         GUILayout.Space(5);
         // Layer mask
         GUILayout.BeginHorizontal();
@@ -331,7 +321,7 @@ public class FTPaint : EditorWindow
         #endregion
         GUILayout.Space(5);
         #region Placement area
-        GUILayout.Label("Placement", FTStyles.Title);
+        GUILayout.Box("Placement", FTStyles.Title, GUILayout.ExpandWidth(true));
         GUILayout.Space(5);
         // Align to normal
         GUILayout.BeginHorizontal();
@@ -352,7 +342,7 @@ public class FTPaint : EditorWindow
         #endregion
         GUILayout.Space(5);
         #region Instance settings area
-        GUILayout.Label("Instance settings", FTStyles.Title);
+        GUILayout.Box("Instance settings", FTStyles.Title, GUILayout.ExpandWidth(true));
         GUILayout.Space(5);
         // Cast shadows
         GUILayout.BeginHorizontal();
@@ -380,8 +370,8 @@ public class FTPaint : EditorWindow
         for (int i = 0; i < points.Length; i++)
         {
             RaycastHit hit;
-            Vector3 startRayPosition = points[i] + Brush.Normal * Brush.DebugLinePointSize;
-            float rayDistance = Brush.DebugLinePointSize + 0.5f;
+            Vector3 startRayPosition = points[i] + Brush.Normal;
+            float rayDistance = 2f;
 
             if (Physics.Raycast(startRayPosition, Brush.InvertNormal, out hit, rayDistance, SelectedFoliageType.LayerMask))
             {
@@ -398,36 +388,18 @@ public class FTPaint : EditorWindow
     // Find the SelectedFoliageType from his ID in the FoliageData and loop over all matrix to compare distance from brush center, remove them if distance is less than radius
     private void Erase()
     {
-        // Get all components around position
-        FTComponentData[] components = ComponentsManager.SceneData.GetClosestComponentsData(Brush.Position);
+        if (ComponentsManager == null || ComponentsManager.SceneData == null) return;
 
-        // Loop over all components
-        for (int i=0; i< components.Length; i++)
-        {
-            // Get the foliage data in the current component
-            FTComponentData.FoliageData foliageToRemove = components[i].GetFoliageDataFromFoliageType(SelectedFoliageType);
+        ComponentsManager.SceneData.RemoveFoliagesInRange(center: Brush.Position, radius: Brush.Radius, foliageType: SelectedFoliageType);
 
-            if (foliageToRemove == null) continue;
-
-            for (int j = 0; j < foliageToRemove.Matrices.Count; j++)
-            {
-                if (Vector3.Distance(Brush.Position, foliageToRemove.GetInstancePosition(j)) < Brush.Radius)
-                {
-                    foliageToRemove.Matrices.RemoveAt(j);
-                }
-            }
-
-            ComponentsManager.SceneData.CleanComponent(components[i]);
-            ComponentsManager.UpdateComponent(components[i]);
-        }
-
-        EditorUtility.SetDirty(ComponentsManager.SceneData);
+        return;
     }
 
     // ...
     private void Fill()
     {
-        // Check component at position
+        if (ComponentsManager == null || ComponentsManager.SceneData == null) return;
+
         FTComponentData activeComponent = ComponentsManager.SceneData.GetComponentDataAtPosition(Brush.Position);
 
         if (activeComponent == null)
@@ -435,34 +407,43 @@ public class FTPaint : EditorWindow
             activeComponent = ComponentsManager.SceneData.AddComponentData(Brush.Position);
         }
 
-        // On lance des rayon en grille dans le component pour faire spawn le foliage
-        int numRows = Mathf.CeilToInt(Mathf.Sqrt((25f * 25f) * SelectedFoliageType.Density));
-        // Calculate the distance between each points
-        float distance = (25f) / numRows;
-        // Create a grid of points in the brush area based on density per square metter, radius and disorder parameters
-        for (int i = 0; i < numRows; i++)
+        Vector3[] gridPoints = FTUtils.GetGridPoints(
+            bounds: activeComponent.Bounds, 
+            density: SelectedFoliageType.Density, 
+            disorder: SelectedFoliageType.Disorder,
+            keepOutOfZone: false
+            );
+
+        if (gridPoints.Length == 0) return;
+
+        NativeArray<RaycastHit> results = new NativeArray<RaycastHit>(gridPoints.Length, Allocator.TempJob);
+        NativeArray<RaycastCommand> commands = new NativeArray<RaycastCommand>(gridPoints.Length, Allocator.TempJob);
+
+        QueryParameters parameters = new QueryParameters(layerMask: SelectedFoliageType.LayerMask);
+
+        for (int i=0; i<gridPoints.Length; i++)
         {
-            for (int j = 0; j < numRows; j++)
-            {
-                // Start ray position
-                float randomX = Random.Range(-SelectedFoliageType.Disorder, SelectedFoliageType.Disorder);
-                float randomZ = Random.Range(-SelectedFoliageType.Disorder, SelectedFoliageType.Disorder);
-
-                Vector3 pointOffset = new Vector3((i * distance + randomX) - 12.5f, 12.5f, (j * distance + randomZ) - 12.5f);
-                Vector3 point = activeComponent.Bounds.center + pointOffset;
-
-                RaycastHit hit;
-                if (Physics.Raycast(point, Vector3.down, out hit, Mathf.Infinity, SelectedFoliageType.LayerMask))
-                {
-                    if (activeComponent.Bounds.Contains(hit.point))
-                    {
-                        Matrix4x4 matrice = CalculateMatrix(hit.point, hit.normal);
-                        ComponentsManager.SceneData.AddFoliage(SelectedFoliageType, matrice);
-                    }
-                }
-            }
+            commands[i] = new RaycastCommand(from: gridPoints[i], direction: Vector3.down, queryParameters: parameters);
         }
-        EditorUtility.SetDirty(ComponentsManager.SceneData);
+        
+        JobHandle jobHandle = RaycastCommand.ScheduleBatch(commands: commands, results: results, minCommandsPerJob: results.Length);
+        jobHandle.Complete();
+
+        RaycastHit[] hits = results.Where(hit => hit.collider != null).ToArray();
+
+        results.Dispose();
+        commands.Dispose();
+
+        for (int i=0; i< hits.Length; i++)
+        {
+            Matrix4x4 matrice = CalculateMatrix(hits[i].point, hits[i].normal);
+            ComponentsManager.SceneData.AddFoliage(SelectedFoliageType, matrice, updateVisualization: i == hits.Length-1);
+
+        }
+
+
+
+        return;
     }
 
     private void EraseFill()
@@ -473,7 +454,8 @@ public class FTPaint : EditorWindow
         if (activeComponent == null) return;
 
         ComponentsManager.SceneData.RemoveFoliageDataInComponentData(componentData: activeComponent, SelectedFoliageType);
-        EditorUtility.SetDirty(ComponentsManager.SceneData);
+
+        return;
     }
 
     private Matrix4x4 CalculateMatrix(Vector3 position, Vector3 normal)
@@ -492,7 +474,7 @@ public class FTPaint : EditorWindow
         }
         if (SelectedFoliageType.RandomRotation)
         {
-            Quaternion yRotation = Quaternion.AngleAxis(Random.Range(0, 360), Vector3.up);
+            Quaternion yRotation = Quaternion.AngleAxis(UnityEngine.Random.Range(0, 360), Vector3.up);
             finalRotation *= yRotation;
         }
 
@@ -532,11 +514,11 @@ public class FTPaint : EditorWindow
 
                     if (InvertPaintMode)
                     {
-                        Brush.DrawCube(position: position, size: new Vector3(componentSize, 0, componentSize), colorPreset: Brush.ErasePreset);
+                        Brush.DrawSquare(position: position, size: new Vector3(componentSize, 0, componentSize), colorPreset: Brush.ErasePreset);
                     }
                     else
                     {
-                        Brush.DrawCube(position: position, size: new Vector3(componentSize, 0, componentSize), colorPreset: Brush.PaintPreset);
+                        Brush.DrawSquare(position: position, size: new Vector3(componentSize, 0, componentSize), colorPreset: Brush.PaintPreset);
                     }
                     
                     break;
@@ -642,186 +624,6 @@ public class FTPaint : EditorWindow
         else
         {
             EditorPrefs.SetFloat("BrushSize", Brush.Size);
-        }
-    }
-}
-
-public class FTBrush
-{
-    public bool Display = false;
-    public Vector3 Position;
-    public Vector3 Normal;
-
-    // Size
-    private float _size = 2f;
-    public float MinSize { get; private set; } = 0.5f;
-    public float MaxSize { get; private set; } = 10f;
-
-    public float DebugLinePointSize { get; private set; } = 0.3f;
-
-    public readonly FTBrushPreset PaintPreset;
-    public readonly FTBrushPreset ErasePreset;
-
-    // Constructor
-    public FTBrush()
-    {
-        PaintPreset = new FTBrushPreset(color: new Color(0f, 0.75f, 1f, 1f));
-        ErasePreset = new FTBrushPreset(color: new Color(1f, 0f, 0f, 1f));
-    }
-
-    // Getter | Setter : Size
-    public float Size
-    {
-        get { return _size; }
-        set { _size = Mathf.Clamp(value, MinSize, MaxSize); }
-    }
-
-    // Getter | Setter : Radius
-    public float Radius
-    {
-        get { return Size / 2; }
-    }
-
-    // Getter | Setter : InvertNormal (Raydirection)
-    public Vector3 InvertNormal
-    {
-        get { return Normal * -1; }
-    }
-
-    // Getter | Setter : BrushArea
-    private float BrushArea
-    {
-        get { return Mathf.PI * Mathf.Pow(((Size) / 2), 2); }
-    }
-
-    // Draw a circle at brush position based on color preset and radius
-    public void DrawCircles(FTBrushPreset colorPreset)
-    {
-        Handles.color = colorPreset.Color * new Color(1f, 1f, 1f, 0.25f);
-        Handles.DrawSolidDisc(Position, Normal, Radius);
-        Handles.color = colorPreset.Color;
-        Handles.DrawWireDisc(Position, Normal, Radius, 3f);
-    }
-
-    public void DrawCube(Vector3 position, Vector3 size, FTBrushPreset colorPreset)
-    {
-        Handles.color = colorPreset.Color;
-        // Handles.DrawWireCube(position, size);
-
-        Vector3 normal = Vector3.up;
-        Vector3 right = Vector3.right * (size.x / 2);
-        Vector3 forward = Vector3.forward * (size.z / 2);
-        Vector3 upperLeft = position - right - forward;
-        Vector3 upperRight = position + right - forward;
-        Vector3 lowerLeft = position - right + forward;
-        Vector3 lowerRight = position + right + forward;
-
-        Handles.DrawAAPolyLine(5, new Vector3[] { upperLeft, upperRight });
-        Handles.DrawAAPolyLine(5, new Vector3[] { upperRight, lowerRight });
-        Handles.DrawAAPolyLine(5, new Vector3[] { lowerRight, lowerLeft });
-        Handles.DrawAAPolyLine(5, new Vector3[] { lowerLeft, upperLeft });
-
-        Handles.DrawSolidRectangleWithOutline(new Vector3[] { upperLeft, upperRight, lowerRight, lowerLeft }, colorPreset.Color * new Color(1f, 1f, 1f, 0.25f), new Color(1f, 1f, 1f, 0f));
-
-
-    }
-
-    // A sunflower algorythm to draw lines for foliage types spawning
-    private Vector3[] SunflowerAlgorythm(float density, float disorder)
-    {
-        Quaternion rotation = Quaternion.FromToRotation(Vector3.up, Normal);
-
-        int pointNumbers = (int)(BrushArea * density);
-        Vector3[] points = new Vector3[pointNumbers];
-
-        float alpha = 2f;
-        int b = Mathf.RoundToInt(alpha * Mathf.Sqrt(pointNumbers));
-        float phi = (Mathf.Sqrt(5f) + 1f) / 2f;
-
-        for (int i = 0; i < pointNumbers; i++)
-        {
-            float randomX = Random.Range(-disorder, disorder);
-            float randomZ = Random.Range(-disorder, disorder);
-
-            float r = SunFlowerRadius(i, pointNumbers, b);
-            float theta = 2f * Mathf.PI * i / Mathf.Pow(phi, 2f);
-            Vector3 pointOffset = new Vector3(r * Mathf.Cos(theta) + randomX, 0f, r * Mathf.Sin(theta) + randomZ) * Radius;
-
-            Vector3 point = Position + rotation * pointOffset;
-            points[i] = point;
-        }
-
-        if (points.Length <= 1)
-        {
-            points = new Vector3[1];
-            points[0] = Position;
-        }
-
-        return points;
-    }
-
-    // A grid algorythm to draw lines for foliage types spawning
-    private Vector3[] GridAlgorythm(float density, float disorder)
-    {
-        List<Vector3> points = new List<Vector3>();
-        // Calculate the number of rows and columns
-        int numRows = Mathf.CeilToInt(Mathf.Sqrt(BrushArea * density));
-        // Calculate the distance between each points
-        float distance = (Size) / numRows;
-        Quaternion rotation = Quaternion.FromToRotation(Vector3.up, Normal);
-        // Create a grid of points in the brush area based on density per square metter, radius and disorder parameters
-        for (int i = 0; i < numRows; i++)
-        {
-            for (int j = 0; j < numRows; j++)
-            {
-                // Randomize offset from disorder parameter
-                float randomX = Random.Range(-disorder, disorder);
-                float randomZ = Random.Range(-disorder, disorder);
-
-                Vector3 pointOffset = new Vector3((i * distance + randomX) - Radius, 0f, (j * distance + randomZ) - Radius);
-                Vector3 point = Position + rotation * pointOffset;
-
-                if (Vector3.Distance(Position, point) <= Radius)
-                {
-                    points.Add(point);
-                }
-            }
-        }
-
-        if (points.Count == 0)
-        {
-            points.Add(Position);
-        }
-
-        // Return the array of all points
-        return points.ToArray();
-    }
-
-    private float SunFlowerRadius(int pointIndex, int pointNumbers, int b)
-    {
-        if (pointIndex > pointNumbers - b)
-        {
-            return 1f;
-        }
-        else
-        {
-            return Mathf.Sqrt(pointIndex - 0.5f) / Mathf.Sqrt(pointNumbers - (b + 0.5f));
-        }
-    }
-
-    public Vector3[] GetPoints(float density, float disorder)
-    {
-        return SunflowerAlgorythm(density: density, disorder: disorder);
-        // return GridAlgorythm();
-    }
-
-    public class FTBrushPreset
-    {
-        public readonly Color Color;
-
-        public FTBrushPreset(Color color)
-        {
-            Color = color;
         }
     }
 }

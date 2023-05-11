@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "FTSceneData", menuName = "Foliage/Scene data")]
@@ -61,6 +62,8 @@ public class FTSceneData : ScriptableObject
 
         OnComponentDataCreated?.Invoke(newComponentData);
 
+        EditorUtility.SetDirty(this);
+
         return newComponentData;
     }
 
@@ -69,12 +72,16 @@ public class FTSceneData : ScriptableObject
     /// </summary>
     /// <param name="foliageType"></param>
     /// <param name="matrix"></param>
-    public void AddFoliage(FoliageType foliageType, Matrix4x4 matrix)
+    public void AddFoliage(FoliageType foliageType, Matrix4x4 matrix, bool updateVisualization = true)
     {
         FTComponentData componentData = GetComponentDataAtPosition(matrix.GetPosition()) ?? AddComponentData(matrix.GetPosition());
         FTComponentData.FoliageData foliageData = componentData.GetFoliageDataFromFoliageType(foliageType) ?? componentData.AddFoliageData(foliageType);
 
         foliageData.Matrices.Add(matrix);
+
+        EditorUtility.SetDirty(this);
+
+        if (!updateVisualization) return;
 
         OnComponentDataUpdated?.Invoke(componentData);
 
@@ -96,6 +103,41 @@ public class FTSceneData : ScriptableObject
         CleanComponent(componentData);
         OnComponentDataUpdated?.Invoke(componentData);
 
+        EditorUtility.SetDirty(this);
+
+        return;
+    }
+
+    /// <summary>
+    /// Remove all foliage type from a position and radius
+    /// </summary>
+    /// <param name="center"></param>
+    /// <param name="radius"></param>
+    /// <param name="foliageType"></param>
+    public void RemoveFoliagesInRange(Vector3 center, float radius, FoliageType foliageType)
+    {
+        FTComponentData[] closestComponents = GetClosestComponentsData(worldPosition: center);
+
+        for (int i = 0; i < closestComponents.Length; i++)
+        {
+            FTComponentData.FoliageData foliageToRemove = closestComponents[i].GetFoliageDataFromFoliageType(foliageType);
+
+            if (foliageToRemove == null) continue;
+
+            for (int j = 0; j < foliageToRemove.Matrices.Count; j++)
+            {
+                if (Vector3.Distance(center, foliageToRemove.GetInstancePosition(j)) < radius)
+                {
+                    foliageToRemove.Matrices.RemoveAt(j);
+                }
+            }
+
+            CleanComponent(closestComponents[i]);
+            OnComponentDataUpdated?.Invoke(closestComponents[i]);
+        }
+
+        EditorUtility.SetDirty(this);
+
         return;
     }
 
@@ -114,6 +156,8 @@ public class FTSceneData : ScriptableObject
             ComponentsData[i].FoliagesData.Remove(foliageData);
             OnComponentDataUpdated?.Invoke(ComponentsData[i]);
         }
+
+        EditorUtility.SetDirty(this);
 
         return;
     }
@@ -141,10 +185,14 @@ public class FTSceneData : ScriptableObject
             OnComponentDataDeleted?.Invoke(componentData.ID);
             ComponentsData.Remove(componentData);
 
+            EditorUtility.SetDirty(this);
+
             return;
         }
 
         OnComponentDataUpdated?.Invoke(componentData);
+
+        EditorUtility.SetDirty(this);
 
         return;
     }

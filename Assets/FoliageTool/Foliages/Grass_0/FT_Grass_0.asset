@@ -15,14 +15,14 @@ MonoBehaviour:
   Prefab: {fileID: 471163686278761272, guid: cdf7037d5ba4f2a4da0c1d44e26a87a9, type: 3}
   LayerMask:
     serializedVersion: 2
-    m_Bits: 8
+    m_Bits: 9
   CullingDistance: 50
   RenderShadows: 0
   ReceiveShadows: 1
   AlignToNormal: 1
   RandomRotation: 1
-  _density: 4
-  _disorder: 0.1
+  _density: 2
+  _disorder: 0.2
   Offset: 0
-  MinimumScale: 0.990566
-  MaximumScale: 1.4626143
+  MinimumScale: 0.9753204
+  MaximumScale: 1.4912281
