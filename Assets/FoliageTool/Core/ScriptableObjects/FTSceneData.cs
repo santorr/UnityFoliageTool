@@ -42,11 +42,18 @@ public class FTSceneData : ScriptableObject
     /// </summary>
     /// <param name="worldPosition"></param>
     /// <returns></returns>
-    public FTComponentData GetComponentDataAtPosition(Vector3 worldPosition)
+    public FTComponentData GetComponentDataAtPosition(Vector3 worldPosition, bool createNewIfNull = false)
     {
         Vector3 gridPosition = FTUtils.TransformWorldToGrid(worldPosition: worldPosition, isGridCoordinate: true);
 
-        return ComponentsData.Find(component => component.GridCoordinate == gridPosition);
+        FTComponentData componentData = ComponentsData.Find(component => component.GridCoordinate == gridPosition);
+
+        if (componentData == null && createNewIfNull)
+        {
+            componentData = AddComponentData(worldPosition: worldPosition);
+        }
+
+        return componentData;
     }
 
     /// <summary>

@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using Unity.VisualScripting;
+using UnityEditor;
 using UnityEngine;
 
 public static class FTUtils
@@ -85,13 +87,17 @@ public static class FTUtils
     /// <param name="disorder"></param>
     /// <param name="keepOutOfZone"></param>
     /// <returns></returns>
-    public static Vector3[] GetGridPoints(Bounds bounds, float density, float disorder, bool keepOutOfZone = true)
+    public static Vector3[] GetGridPoints(Bounds bounds, Vector3 normal, float density, float disorder, Texture2D mask = null)
     {
         Vector3 center = bounds.center;
         float width = bounds.size.x;
         float height = bounds.size.z;
 
+        Texture2D texture = mask == null ? Texture2D.whiteTexture : mask;
+
         List<Vector3> points = new List<Vector3>();
+
+        Quaternion rotation = Quaternion.FromToRotation(Vector3.up, normal);
 
         int numWidthPoints = Mathf.CeilToInt(width * density);
         float widthDistance = width / numWidthPoints;
@@ -103,22 +109,25 @@ public static class FTUtils
         {
             for (int j=0; j<numHeightPoints; j++)
             {
+                // Create a random offset based on disorder
                 Vector3 disorderOffset = new Vector3(Random.Range(-disorder, disorder), 0f, Random.Range(-disorder, disorder));
 
-                Vector3 pointOffset = new Vector3((i * widthDistance) - width/2, bounds.size.y / 2, (j * heightDistance) - height/2);
+                Vector3 pointOffset = new Vector3((i * widthDistance), bounds.extents.y, (j * heightDistance)) + disorderOffset;
 
-                Vector3 point = center + pointOffset + disorderOffset;
+                // Return if the point on the grid is outside of the bounds
+                if (pointOffset.x < 0 || pointOffset.z < 0 || pointOffset.x > width || pointOffset.z > height) continue;
 
-                if (!keepOutOfZone)
-                {
-                    if (point.x < center.x - width / 2 || 
-                        point.x > center.x + width / 2 ||
-                        point.z < center.z - height / 2 ||
-                        point.z > center.z + height / 2) 
-                        continue;
-                }
+                // Convert world position to texture pixel position
+                int xPos = Mathf.CeilToInt((pointOffset.x / width) * texture.width);
+                int yPos = Mathf.CeilToInt((pointOffset.z / height) * texture.height);
+                Color color = texture.GetPixel(x: xPos, y: yPos);
 
-                points.Add(point);
+                // Return if black pixel
+                if (color == Color.black) continue;
+
+                Vector3 worldPosition = rotation * (pointOffset - new Vector3(width / 2, 0, height / 2)) + center;
+
+                points.Add(worldPosition);
             }
         }
 

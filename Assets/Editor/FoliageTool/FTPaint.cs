@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement;
 using System.Threading.Tasks;
 using Unity.Collections;
 using Unity.Jobs;
-using System;
+using Unity.VisualScripting;
 
 public class FTPaint : EditorWindow
 {
@@ -61,6 +61,8 @@ public class FTPaint : EditorWindow
     public bool CanPaint { get; private set; } = true;
     public int SelectedIndex { get; private set; }
     public FoliageType[] FoliageTypes { get; private set; }
+    public int SelectedMaskIndex { get; private set; }
+    public Texture2D[] Masks { get; private set; }
     public EPaintMode PaintMode { get; private set; }
     public bool InvertPaintMode { get; private set; }
     public Vector2 FoliageTypesScrollPosition { get; private set; }
@@ -95,6 +97,7 @@ public class FTPaint : EditorWindow
         SceneView.duringSceneGui -= this.OnSceneGUI;
         SceneView.duringSceneGui += this.OnSceneGUI;
         RefreshFoliageTypes();
+        RefreshMasks();
     }
 
     private void OnEnable()
@@ -160,6 +163,22 @@ public class FTPaint : EditorWindow
         GUILayout.Label(Brush.Size.ToString("F1"), GUILayout.Width(50));
         GUILayout.EndHorizontal();
         GUILayout.Space(5);
+
+
+        GUILayout.Box("Masks", FTStyles.Title, GUILayout.ExpandWidth(true));
+        GUILayout.Space(5);
+
+        List<GUIContent> masksGUI = new List<GUIContent>();
+
+        foreach (Texture2D mask in Masks)
+        {
+            GUIContent content = new GUIContent(mask);
+
+            masksGUI.Add(content);
+        }
+        SelectedMaskIndex = GUILayout.SelectionGrid(SelectedMaskIndex, masksGUI.ToArray(), 5, GUILayout.Height(Mathf.CeilToInt(masksGUI.Count / (float)5) * 50f));
+
+
         #endregion
 
         #region FOLIAGE TYPES
@@ -364,16 +383,23 @@ public class FTPaint : EditorWindow
 
     private void Paint()
     {
-        Vector3[] points = Brush.GetPoints(density: SelectedFoliageType.Density, disorder: SelectedFoliageType.Disorder);
+        if (ComponentsManager == null || ComponentsManager.SceneData == null) return;
+
+        Vector3[] points = FTUtils.GetGridPoints(
+            bounds: Brush.Bounds,
+            normal: Brush.Normal,
+            density: SelectedFoliageType.Density,
+            disorder: SelectedFoliageType.Disorder,
+            mask: SelectedMask
+            );
 
         // Pour chacun des points du brush on lance un rayon qui va tester les collisions
         for (int i = 0; i < points.Length; i++)
         {
             RaycastHit hit;
-            Vector3 startRayPosition = points[i] + Brush.Normal;
             float rayDistance = 2f;
 
-            if (Physics.Raycast(startRayPosition, Brush.InvertNormal, out hit, rayDistance, SelectedFoliageType.LayerMask))
+            if (Physics.Raycast(points[i], Brush.InvertNormal, out hit, rayDistance, SelectedFoliageType.LayerMask))
             {
                 // Create the instance matrix
                 Matrix4x4 matrice = CalculateMatrix(position: hit.point, normal: hit.normal);
@@ -400,35 +426,38 @@ public class FTPaint : EditorWindow
     {
         if (ComponentsManager == null || ComponentsManager.SceneData == null) return;
 
-        FTComponentData activeComponent = ComponentsManager.SceneData.GetComponentDataAtPosition(Brush.Position);
+        // Get component data at cursor location, if null, create a new one
+        FTComponentData activeComponent = ComponentsManager.SceneData.GetComponentDataAtPosition(worldPosition: Brush.Position, createNewIfNull: true);
 
-        if (activeComponent == null)
-        {
-            activeComponent = ComponentsManager.SceneData.AddComponentData(Brush.Position);
-        }
-
+        // Generate a grid with multiple points based on component size, density and disorder
         Vector3[] gridPoints = FTUtils.GetGridPoints(
-            bounds: activeComponent.Bounds, 
+            bounds: activeComponent.Bounds,
+            normal: Vector3.up,
             density: SelectedFoliageType.Density, 
-            disorder: SelectedFoliageType.Disorder,
-            keepOutOfZone: false
+            disorder: SelectedFoliageType.Disorder
             );
 
+        // If the list of points is null return
         if (gridPoints.Length == 0) return;
 
+        // Prepare the batch raycast
+        QueryParameters parameters = new QueryParameters(layerMask: SelectedFoliageType.LayerMask);
         NativeArray<RaycastHit> results = new NativeArray<RaycastHit>(gridPoints.Length, Allocator.TempJob);
         NativeArray<RaycastCommand> commands = new NativeArray<RaycastCommand>(gridPoints.Length, Allocator.TempJob);
 
-        QueryParameters parameters = new QueryParameters(layerMask: SelectedFoliageType.LayerMask);
-
+        // Setup the a command foreach points
         for (int i=0; i<gridPoints.Length; i++)
         {
             commands[i] = new RaycastCommand(from: gridPoints[i], direction: Vector3.down, queryParameters: parameters);
         }
         
+        // Run all commands
         JobHandle jobHandle = RaycastCommand.ScheduleBatch(commands: commands, results: results, minCommandsPerJob: results.Length);
+
+        // On command complete
         jobHandle.Complete();
 
+        // Remove all "null" hits
         RaycastHit[] hits = results.Where(hit => hit.collider != null).ToArray();
 
         results.Dispose();
@@ -438,10 +467,7 @@ public class FTPaint : EditorWindow
         {
             Matrix4x4 matrice = CalculateMatrix(hits[i].point, hits[i].normal);
             ComponentsManager.SceneData.AddFoliage(SelectedFoliageType, matrice, updateVisualization: i == hits.Length-1);
-
         }
-
-
 
         return;
     }
@@ -546,6 +572,19 @@ public class FTPaint : EditorWindow
         }
     }
 
+    private void RefreshMasks()
+    {
+        string[] projectMasksGuid = AssetDatabase.FindAssets("t:texture2D", new[] { "Assets/FoliageTool/Masks" });
+
+        Masks = new Texture2D[projectMasksGuid.Length];
+
+        for (int i = 0; i < projectMasksGuid.Length; i++)
+        {
+            string assetPath = AssetDatabase.GUIDToAssetPath(projectMasksGuid[i]);
+            Masks[i] = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
+        }
+    }
+
     // Get the selected foliage, return null if not valid
     private FoliageType SelectedFoliageType
     {
@@ -554,6 +593,18 @@ public class FTPaint : EditorWindow
             if (FoliageTypes.Length >= SelectedIndex)
             {
                 return FoliageTypes[SelectedIndex];
+            }
+            return null;
+        }
+    }
+
+    private Texture2D SelectedMask
+    {
+        get
+        {
+            if (Masks.Length >= SelectedMaskIndex)
+            {
+                return Masks[SelectedMaskIndex];
             }
             return null;
         }

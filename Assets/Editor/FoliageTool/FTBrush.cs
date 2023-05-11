@@ -1,14 +1,15 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.Rendering;
+using UnityEngine.UIElements;
 
 public class FTBrush
 {
     public bool Display = false;
     public Vector3 Position;
     public Vector3 Normal;
-
+    public Texture2D Mask;
+    
     // Size
     private float _size = 2f;
     public float MinSize { get; private set; } = 0.5f;
@@ -49,6 +50,11 @@ public class FTBrush
         get { return Mathf.PI * Mathf.Pow(((Size) / 2), 2); }
     }
 
+    public Bounds Bounds
+    {
+        get { return new Bounds(Position, new Vector3(Size, 1, Size)); }
+    }
+
     // Draw a circle at brush position based on color preset and radius
     public void DrawCircles(FTBrushPreset colorPreset)
     {
@@ -80,57 +86,6 @@ public class FTBrush
         Handles.DrawSolidRectangleWithOutline(new Vector3[] { upperLeft, upperRight, lowerRight, lowerLeft }, colorPreset.Color * new Color(1f, 1f, 1f, 0.25f), new Color(1f, 1f, 1f, 0f));
 
 
-    }
-
-    // A sunflower algorythm to draw lines for foliage types spawning
-    private Vector3[] SunflowerAlgorythm(float density, float disorder)
-    {
-        Quaternion rotation = Quaternion.FromToRotation(Vector3.up, Normal);
-
-        int pointNumbers = (int)(BrushArea * density);
-        Vector3[] points = new Vector3[pointNumbers];
-
-        float alpha = 2f;
-        int b = Mathf.RoundToInt(alpha * Mathf.Sqrt(pointNumbers));
-        float phi = (Mathf.Sqrt(5f) + 1f) / 2f;
-
-        for (int i = 0; i < pointNumbers; i++)
-        {
-            float randomX = Random.Range(-disorder, disorder);
-            float randomZ = Random.Range(-disorder, disorder);
-
-            float r = SunFlowerRadius(i, pointNumbers, b);
-            float theta = 2f * Mathf.PI * i / Mathf.Pow(phi, 2f);
-            Vector3 pointOffset = new Vector3(r * Mathf.Cos(theta) + randomX, 0f, r * Mathf.Sin(theta) + randomZ) * Radius;
-
-            Vector3 point = Position + rotation * pointOffset;
-            points[i] = point;
-        }
-
-        if (points.Length <= 1)
-        {
-            points = new Vector3[1];
-            points[0] = Position;
-        }
-
-        return points;
-    }
-
-    private float SunFlowerRadius(int pointIndex, int pointNumbers, int b)
-    {
-        if (pointIndex > pointNumbers - b)
-        {
-            return 1f;
-        }
-        else
-        {
-            return Mathf.Sqrt(pointIndex - 0.5f) / Mathf.Sqrt(pointNumbers - (b + 0.5f));
-        }
-    }
-
-    public Vector3[] GetPoints(float density, float disorder)
-    {
-        return SunflowerAlgorythm(density: density, disorder: disorder);
     }
 
     public class FTBrushPreset
