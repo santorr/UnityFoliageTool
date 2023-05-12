@@ -91,20 +91,25 @@ public static class FTUtils
     {
         Vector3 center = bounds.center;
         float width = bounds.size.x;
-        float height = bounds.size.z;
+        float depth = bounds.size.z;
+        float height = bounds.size.y;
 
+        // If mask is null, create a white texture as mask
         Texture2D texture = mask == null ? Texture2D.whiteTexture : mask;
 
+        // Create a list to add matching points
         List<Vector3> points = new List<Vector3>();
 
+        // Rotation to apply to create the grid on the right angle, e.g : wall, ground
         Quaternion rotation = Quaternion.FromToRotation(Vector3.up, normal);
 
+        // Setup the number of iteration x,y and the distance between each iteration from density and bounds
         int numWidthPoints = Mathf.CeilToInt(width * density);
         float widthDistance = width / numWidthPoints;
+        int numHeightPoints = Mathf.CeilToInt(depth * density);
+        float heightDistance = depth / numHeightPoints;
 
-        int numHeightPoints = Mathf.CeilToInt(height * density);
-        float heightDistance = height / numHeightPoints;
-
+        // Create the grid x,y
         for (int i=0; i< numWidthPoints; i++)
         {
             for (int j=0; j<numHeightPoints; j++)
@@ -112,20 +117,20 @@ public static class FTUtils
                 // Create a random offset based on disorder
                 Vector3 disorderOffset = new Vector3(Random.Range(-disorder, disorder), 0f, Random.Range(-disorder, disorder));
 
-                Vector3 pointOffset = new Vector3((i * widthDistance), bounds.extents.y, (j * heightDistance)) + disorderOffset;
+                Vector3 pointOffset = new Vector3((i * widthDistance), height/2, (j * heightDistance)) + disorderOffset;
 
                 // Return if the point on the grid is outside of the bounds
-                if (pointOffset.x < 0 || pointOffset.z < 0 || pointOffset.x > width || pointOffset.z > height) continue;
+                if (pointOffset.x < 0 || pointOffset.z < 0 || pointOffset.x > width || pointOffset.z > depth) continue;
 
                 // Convert world position to texture pixel position
                 int xPos = Mathf.CeilToInt((pointOffset.x / width) * texture.width);
-                int yPos = Mathf.CeilToInt((pointOffset.z / height) * texture.height);
+                int yPos = Mathf.CeilToInt((pointOffset.z / depth) * texture.height);
                 Color color = texture.GetPixel(x: xPos, y: yPos);
 
                 // Return if black pixel
                 if (color == Color.black) continue;
 
-                Vector3 worldPosition = rotation * (pointOffset - new Vector3(width / 2, 0, height / 2)) + center;
+                Vector3 worldPosition = rotation * (pointOffset - new Vector3(width / 2, 0, depth / 2)) + center;
 
                 points.Add(worldPosition);
             }
