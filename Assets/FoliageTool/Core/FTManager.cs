@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -9,6 +10,12 @@ public class FTManager : MonoBehaviour
     public bool IsDebug = false;
     public FTSceneData SceneData;
     private List<FTComponent> Components = new List<FTComponent>();
+
+    private Camera _camera;
+    
+    // int kernel;
+    // private ComputeShader _computeShader;
+
 
     /// <summary>
     /// Listen for events coming from scene data and initialize the manager.
@@ -21,6 +28,9 @@ public class FTManager : MonoBehaviour
             FTSceneData.OnComponentDataUpdated += UpdateComponent;
             FTSceneData.OnComponentDataDeleted += DestroyComponent;
         }
+
+        _camera = Camera.main;
+
         Initialize();
     }
 
@@ -61,11 +71,14 @@ public class FTManager : MonoBehaviour
     /// </summary>
     private void Update()
     {
+        // Plane[] frustrumPlanes = GeometryUtility.CalculateFrustumPlanes(_camera);
+
         for (int i = 0; i < Components.Count; i++)
         {
-            float distanceFromCamera = Application.isPlaying ? Vector3.Distance(Camera.main.transform.position, Components[i].Bounds.center) : 0f;
-
-            Components[i].DrawInstances(distanceFromCamera: distanceFromCamera);
+            // if (GeometryUtility.TestPlanesAABB(frustrumPlanes, Components[i].Bounds))
+            // {
+            Components[i].DrawInstances();
+            // }
         }
     }
 

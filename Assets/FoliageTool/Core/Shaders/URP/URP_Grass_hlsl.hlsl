@@ -1,12 +1,13 @@
 #ifndef BELT_SHADER_INCLUDED
 #define BELT_SHADER_INCLUDED
 
-StructuredBuffer<float4x4> grassData;
+StructuredBuffer<float4x4> foliageMatrices;
+// StructuredBuffer<bool> visibility;
 
 void instancingSetup()
 {
     #ifndef SHADERGRAPH_PREVIEW
-        unity_ObjectToWorld = grassData[unity_InstanceID];
+        unity_ObjectToWorld = foliageMatrices[unity_InstanceID];
 		unity_WorldToObject = transpose(unity_ObjectToWorld);
     #endif
 }
@@ -24,6 +25,8 @@ void GetInstanceID_float(out float Out)
 void Instancing_float(float3 Position, out float3 Out)
 {
     Out = Position;
+    // out float Visibility
+    // Visibility = int(visibility[unity_InstanceID]);
 }
 
 #endif

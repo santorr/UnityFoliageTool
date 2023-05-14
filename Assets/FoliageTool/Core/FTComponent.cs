@@ -38,14 +38,11 @@ public class FTComponent
     }
 
     // Render all instances if distance to camera is less than culling distance
-    public void DrawInstances(float distanceFromCamera)
+    public void DrawInstances()
     {
         for (int i=0; i<Instances.Length; i++)
         {
-            if (distanceFromCamera < Instances[i].CullingDistance)
-            {
-                Instances[i].Render();
-            }
+            Instances[i].Render();
         }
     }
 

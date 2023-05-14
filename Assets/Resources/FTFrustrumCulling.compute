@@ -1,0 +1,42 @@
+#pragma kernel CSMain
+
+// Buffer containing all instance position
+StructuredBuffer<float4x4> _InstanceBuffer;
+// Append buffer to fill with right instances
+AppendStructuredBuffer<float4x4> _AppendInstanceBuffer;
+// Camera planes to calculate frustrum
+float4 _CameraFrustumPlanes[6];
+// Camera position to calculate distance
+float4 _CameraPosition;
+
+[numthreads(1,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+	uint instanceId = id.x;
+	
+	float4x4 instanceMatrix = _InstanceBuffer[instanceId];
+
+	float3 position = instanceMatrix._m03_m13_m23;
+	
+	float4 CameraDistances0 = float4(
+			dot(_CameraFrustumPlanes[0].xyz, position) + _CameraFrustumPlanes[0].w,
+			dot(_CameraFrustumPlanes[1].xyz, position) + _CameraFrustumPlanes[1].w,
+			dot(_CameraFrustumPlanes[2].xyz, position) + _CameraFrustumPlanes[2].w,
+			dot(_CameraFrustumPlanes[3].xyz, position) + _CameraFrustumPlanes[3].w
+		);
+	
+	float4 CameraDistances1 = float4(
+			dot(_CameraFrustumPlanes[4].xyz, position) + _CameraFrustumPlanes[4].w,
+			dot(_CameraFrustumPlanes[5].xyz, position) + _CameraFrustumPlanes[5].w,
+			0.0f,
+			0.0f
+		);
+
+	if(all(CameraDistances0 >= -2) && all(CameraDistances1 >= -2))
+	{
+		if(distance(position, _CameraPosition.xyz) < 20)
+		{
+			_AppendInstanceBuffer.Append(instanceMatrix);
+		}
+	}
+}
