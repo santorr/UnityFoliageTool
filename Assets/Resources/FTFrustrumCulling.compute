@@ -34,7 +34,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
 	if(all(CameraDistances0 >= -2) && all(CameraDistances1 >= -2))
 	{
-		if(distance(position, _CameraPosition.xyz) < 20)
+		if(distance(position, _CameraPosition.xyz) < 40)
 		{
 			_AppendInstanceBuffer.Append(instanceMatrix);
 		}

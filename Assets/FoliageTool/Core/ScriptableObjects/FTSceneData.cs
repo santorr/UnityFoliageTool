@@ -69,7 +69,7 @@ public class FTSceneData : ScriptableObject
 
         OnComponentDataCreated?.Invoke(newComponentData);
 
-        EditorUtility.SetDirty(this);
+        SetDirtyScriptableObject();
 
         return newComponentData;
     }
@@ -86,7 +86,7 @@ public class FTSceneData : ScriptableObject
 
         foliageData.Matrices.Add(matrix);
 
-        EditorUtility.SetDirty(this);
+        SetDirtyScriptableObject();
 
         if (!updateVisualization) return;
 
@@ -110,7 +110,7 @@ public class FTSceneData : ScriptableObject
         CleanComponent(componentData);
         OnComponentDataUpdated?.Invoke(componentData);
 
-        EditorUtility.SetDirty(this);
+        SetDirtyScriptableObject();
 
         return;
     }
@@ -143,7 +143,7 @@ public class FTSceneData : ScriptableObject
             OnComponentDataUpdated?.Invoke(closestComponents[i]);
         }
 
-        EditorUtility.SetDirty(this);
+        SetDirtyScriptableObject();
 
         return;
     }
@@ -164,7 +164,7 @@ public class FTSceneData : ScriptableObject
             OnComponentDataUpdated?.Invoke(ComponentsData[i]);
         }
 
-        EditorUtility.SetDirty(this);
+        SetDirtyScriptableObject();
 
         return;
     }
@@ -192,16 +192,23 @@ public class FTSceneData : ScriptableObject
             OnComponentDataDeleted?.Invoke(componentData.ID);
             ComponentsData.Remove(componentData);
 
-            EditorUtility.SetDirty(this);
+            SetDirtyScriptableObject();
 
             return;
         }
 
         OnComponentDataUpdated?.Invoke(componentData);
 
-        EditorUtility.SetDirty(this);
+        SetDirtyScriptableObject();
 
         return;
+    }
+
+    private void SetDirtyScriptableObject()
+    {
+#if UNITY_EDITOR
+        EditorUtility.SetDirty(this);
+#endif
     }
 }
 

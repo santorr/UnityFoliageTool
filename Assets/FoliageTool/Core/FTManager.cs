@@ -1,7 +1,8 @@
 using System.Collections.Generic;
-using Unity.VisualScripting;
+using System.Threading;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Profiling;
 using UnityEngine.Rendering;
 
 [ExecuteAlways]
@@ -12,9 +13,8 @@ public class FTManager : MonoBehaviour
     private List<FTComponent> Components = new List<FTComponent>();
 
     private Camera _camera;
-    
-    // int kernel;
-    // private ComputeShader _computeShader;
+
+    Thread _thread;
 
 
     /// <summary>
@@ -71,15 +71,17 @@ public class FTManager : MonoBehaviour
     /// </summary>
     private void Update()
     {
-        // Plane[] frustrumPlanes = GeometryUtility.CalculateFrustumPlanes(_camera);
-
+        Profiler.BeginSample("Manager draw components instances");
+        Plane[] frustrumPlanes = GeometryUtility.CalculateFrustumPlanes(_camera);
+        
         for (int i = 0; i < Components.Count; i++)
         {
-            // if (GeometryUtility.TestPlanesAABB(frustrumPlanes, Components[i].Bounds))
-            // {
-            Components[i].DrawInstances();
-            // }
+            if (GeometryUtility.TestPlanesAABB(frustrumPlanes, Components[i].Bounds))
+            {
+                    Components[i].DrawInstances();
+            }
         }
+        Profiler.EndSample();
     }
 
     /// <summary>
@@ -153,6 +155,8 @@ public class FTManager : MonoBehaviour
         return;
     }
 
+
+#if UNITY_EDITOR
     /// <summary>
     /// Draw debug gizmos
     /// </summary>
@@ -170,4 +174,5 @@ public class FTManager : MonoBehaviour
 
         return;
     }
+#endif
 }

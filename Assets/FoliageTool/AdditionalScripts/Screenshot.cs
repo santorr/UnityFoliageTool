@@ -1,4 +1,5 @@
-using UnityEditor;
+// using UnityEditor;
+using System.IO;
 using UnityEngine;
 
 public class Screenshot : MonoBehaviour
@@ -7,7 +8,6 @@ public class Screenshot : MonoBehaviour
     public KeyCode firstInput = KeyCode.LeftControl;
     public KeyCode secondInput = KeyCode.S;
     [Header("Settings")]
-    public bool Overwrite = false;
     [Range(1, 5)] public int SizeMultpilier = 1;
     public string _screenshotName = "Screenshot";
 
@@ -24,13 +24,26 @@ public class Screenshot : MonoBehaviour
 
     private void SaveScreenshot()
     {
-        string path = Application.dataPath + "/FoliageTool/Screenshots/" + _screenshotName + ".jpg";
-        if (!Overwrite)
-        {
-            path = AssetDatabase.GenerateUniqueAssetPath(path);
-        }
+        string path = GetUniquePath();
+
+        if (path == null) return;
+
         ScreenCapture.CaptureScreenshot(filename: path, superSize: SizeMultpilier);
-        UnityEditor.AssetDatabase.Refresh();
-        Debug.Log("Saved screenshot.");
+    }
+
+    private string GetUniquePath()
+    {
+        string basePath = Application.dataPath + "/FoliageTool/Screenshots/";
+        string extension = ".jpg";
+        int index = 0;
+
+        if (!Directory.Exists(basePath)) return null;
+
+        while (File.Exists(basePath + _screenshotName + "_" + index + extension))
+        {
+            index++;
+        }
+
+        return basePath + _screenshotName + "_" + index + extension;
     }
 }

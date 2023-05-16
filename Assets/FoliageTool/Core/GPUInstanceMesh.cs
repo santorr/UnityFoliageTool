@@ -1,6 +1,5 @@
 using UnityEngine.Rendering;
 using UnityEngine;
-using UnityEngine.Profiling;
 
 public class Args
 {
@@ -11,7 +10,6 @@ public class Args
         args = new uint[5] { meshIndexCount, instanceCount, meshIndexStart, meshBaseVertex, 0 };
     }
 }
-
 
 public class GPUInstanceMesh
 {
@@ -94,33 +92,39 @@ public class GPUInstanceMesh
     }
 
     /// <summary>
-    /// Render instance
+    /// OnPreRender ()
     /// </summary>
-    public void Render()
+    private void OnPreRender()
     {
-        Profiler.BeginSample("ComputeShader.Setup");
+        // Reset the "Append buffer"
         _appendInstanceBuffer.SetCounterValue(0);
+
+        // Set the compute shader
         _computeShader.SetFloats("_CameraFrustumPlanes", GetFrustumPlanes(_camera));
         _computeShader.SetBuffer(0, "_AppendInstanceBuffer", _appendInstanceBuffer);
         _computeShader.SetBuffer(0, "_InstanceBuffer", _foliageBuffer);
         _computeShader.SetVector("_CameraPosition", _camera.transform.position);
-        Profiler.EndSample();
 
-        Profiler.BeginSample("ComputeShader.Dispatch");
+        // Dispatch the compute shader
         _computeShader.Dispatch(0, InstanceCount, 1, 1);
-        Profiler.EndSample();
+
+        // Setup the args buffer
+        for (int i=0; i<Materials.Length; i++)
+        {
+            ComputeBuffer.CopyCount(_appendInstanceBuffer, _argsBuffers[i], 4 * 1);
+            // _argsBuffers[i].GetData(_args[i].args);
+        }
+    }
+
+    /// <summary>
+    /// Render instance
+    /// </summary>
+    public void Render()
+    {
+        OnPreRender();
 
         for (int i = 0; i < Materials.Length; i++)
         {
-            Profiler.BeginSample("ComputeBuffer.CopyCount");
-            ComputeBuffer.CopyCount(_appendInstanceBuffer, _argsBuffers[i], 4 * 1);
-            Profiler.EndSample();
-
-            Profiler.BeginSample("ComputeBuffer.GetData");
-            // _argsBuffers[i].GetData(_args[i].args);
-            Profiler.EndSample();
-
-            Profiler.BeginSample("Graphics.DrawMeshInstancedIndirect");
             Graphics.DrawMeshInstancedIndirect(
                 mesh: Mesh,
                 submeshIndex: i,
@@ -132,7 +136,6 @@ public class GPUInstanceMesh
                 castShadows: RenderShadows,
                 receiveShadows: ReceiveShadows
                 );
-            Profiler.EndSample();
         }
 
         FTUtils.Message(_isDebug, this, "Draw : " + Matrices.Length + " of " + Mesh + "\n" +

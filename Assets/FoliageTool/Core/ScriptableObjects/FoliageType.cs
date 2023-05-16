@@ -1,4 +1,3 @@
-using UnityEditor;
 using UnityEngine;
 
 /// <summary>
@@ -41,21 +40,6 @@ public class FoliageType : ScriptableObject
     {
         get { return _disorder; }
         set { _disorder = Mathf.Max(value, 0); }
-    }
-
-    public string GetID
-    {
-        get
-        {
-            if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(this, out string guid, out long localId))
-            {
-                return guid;
-            }
-            else
-            {
-                return null;
-            }
-        }
     }
 
     // Return mesh of Prefab object
